@@ -107,11 +107,15 @@ public class Logger {
     }
     
     private func log(message: String, level: LogLevel, file: String, function: String, line: Int) {
-        guard level >= minimumLevel else { return }
-        
         let timestamp = Date()
+        
         queue.async { [weak self] in
-            self?.destinations.forEach { destination in
+            guard let self = self else { return }
+            
+            // Check minimum level on the serial queue to ensure thread safety
+            guard level >= self.minimumLevel else { return }
+            
+            self.destinations.forEach { destination in
                 destination.write(message: message, level: level, timestamp: timestamp, file: file, function: function, line: line)
             }
         }
