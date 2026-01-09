@@ -10,7 +10,17 @@ final class LoggerTests: XCTestCase {
         super.setUp()
         logger = Logger.shared
         testDestination = TestLogDestination()
+        
+        // Use expectation to wait for configuration to complete
+        let configExpectation = expectation(description: "Configuration complete")
         logger.configure(destinations: [testDestination], minimumLevel: .debug)
+        
+        // Give async operation time to complete
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            configExpectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 1.0)
     }
     
     func testLogLevelComparison() {
@@ -84,14 +94,22 @@ final class LoggerTests: XCTestCase {
     }
     
     func testMinimumLogLevel() {
+        let setLevelExpectation = expectation(description: "Set level complete")
         logger.setMinimumLevel(.warning)
+        
+        // Wait for async operation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            setLevelExpectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 1.0)
         
         logger.debug("Debug message")
         logger.info("Info message")
         logger.warning("Warning message")
         
         let expectation = self.expectation(description: "Log written")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             expectation.fulfill()
         }
         
@@ -104,12 +122,21 @@ final class LoggerTests: XCTestCase {
     
     func testAddDestination() {
         let secondDestination = TestLogDestination()
+        
+        let addDestExpectation = expectation(description: "Add destination complete")
         logger.addDestination(secondDestination)
+        
+        // Wait for async operation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            addDestExpectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 1.0)
         
         logger.info("Test message")
         
         let expectation = self.expectation(description: "Log written")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             expectation.fulfill()
         }
         

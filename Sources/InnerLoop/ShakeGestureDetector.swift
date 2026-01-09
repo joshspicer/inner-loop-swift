@@ -80,9 +80,18 @@ public class ShakeGestureDetector {
     }
     
     private func getTopViewController() -> UIViewController? {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first(where: { $0.isKeyWindow }),
-              let rootViewController = window.rootViewController else {
+        // Use the first connected scene and find its key window
+        guard let windowScene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) else {
+            return nil
+        }
+        
+        guard let window = windowScene.windows.first(where: { $0.isKeyWindow }) else {
+            return nil
+        }
+        
+        guard let rootViewController = window.rootViewController else {
             return nil
         }
         

@@ -43,15 +43,16 @@ public class RemoteLogDestination: LogDestination {
                 
                 let task = URLSession.shared.dataTask(with: request) { _, response, error in
                     if let error = error {
-                        print("Failed to send log to remote: \(error.localizedDescription)")
+                        // Use stderr for internal errors to avoid circular dependency
+                        fputs("InnerLoop: Failed to send log to remote: \(error.localizedDescription)\n", stderr)
                     } else if let httpResponse = response as? HTTPURLResponse,
                               !(200...299).contains(httpResponse.statusCode) {
-                        print("Remote log returned status code: \(httpResponse.statusCode)")
+                        fputs("InnerLoop: Remote log returned status code: \(httpResponse.statusCode)\n", stderr)
                     }
                 }
                 task.resume()
             } catch {
-                print("Failed to encode log entry: \(error.localizedDescription)")
+                fputs("InnerLoop: Failed to encode log entry: \(error.localizedDescription)\n", stderr)
             }
         }
     }

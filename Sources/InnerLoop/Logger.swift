@@ -57,24 +57,32 @@ public class Logger {
     }
     
     /// Configure the logger with custom destinations
+    /// - Parameters:
+    ///   - destinations: Array of log destinations
+    ///   - minimumLevel: Minimum log level to output
+    /// - Note: This method uses async dispatch and is thread-safe
     public func configure(destinations: [LogDestination], minimumLevel: LogLevel = .debug) {
-        queue.sync {
-            self.destinations = destinations
-            self.minimumLevel = minimumLevel
+        queue.async { [weak self] in
+            self?.destinations = destinations
+            self?.minimumLevel = minimumLevel
         }
     }
     
     /// Add a log destination
+    /// - Parameter destination: The log destination to add
+    /// - Note: This method uses async dispatch and is thread-safe
     public func addDestination(_ destination: LogDestination) {
-        queue.sync {
-            self.destinations.append(destination)
+        queue.async { [weak self] in
+            self?.destinations.append(destination)
         }
     }
     
     /// Set minimum log level
+    /// - Parameter level: The minimum log level to output
+    /// - Note: This method uses async dispatch and is thread-safe
     public func setMinimumLevel(_ level: LogLevel) {
-        queue.sync {
-            self.minimumLevel = level
+        queue.async { [weak self] in
+            self?.minimumLevel = level
         }
     }
     

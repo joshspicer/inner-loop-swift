@@ -49,16 +49,7 @@ public class ErrorHandler {
         let errorMessage = error.localizedDescription
         let stackTrace = Thread.callStackSymbols.joined(separator: "\n")
         
-        var metadata = additionalInfo
-        for (key, value) in configuration.metadata {
-            if let stringValue = value as? String {
-                metadata[key] = stringValue
-            } else if let customStringConvertible = value as? CustomStringConvertible {
-                metadata[key] = customStringConvertible.description
-            } else {
-                metadata[key] = "\(value)"
-            }
-        }
+        let metadata = buildMetadata(from: configuration, additionalInfo: additionalInfo)
         
         let errorInfo = ErrorInfo(
             message: errorMessage,
@@ -88,16 +79,7 @@ public class ErrorHandler {
         
         let stackTrace = Thread.callStackSymbols.joined(separator: "\n")
         
-        var metadata = additionalInfo
-        for (key, value) in configuration.metadata {
-            if let stringValue = value as? String {
-                metadata[key] = stringValue
-            } else if let customStringConvertible = value as? CustomStringConvertible {
-                metadata[key] = customStringConvertible.description
-            } else {
-                metadata[key] = "\(value)"
-            }
-        }
+        let metadata = buildMetadata(from: configuration, additionalInfo: additionalInfo)
         
         let errorInfo = ErrorInfo(
             message: message,
@@ -116,6 +98,23 @@ public class ErrorHandler {
            let url = URL(string: urlString) {
             sendErrorReport(errorInfo: errorInfo, to: url, headers: configuration.customHeaders)
         }
+    }
+    
+    /// Build metadata dictionary from configuration and additional info
+    private func buildMetadata(from configuration: InnerLoopConfiguration, additionalInfo: [String: String]) -> [String: String] {
+        var metadata = additionalInfo
+        
+        for (key, value) in configuration.metadata {
+            if let stringValue = value as? String {
+                metadata[key] = stringValue
+            } else if let customStringConvertible = value as? CustomStringConvertible {
+                metadata[key] = customStringConvertible.description
+            } else {
+                metadata[key] = "\(value)"
+            }
+        }
+        
+        return metadata
     }
     
     private func sendErrorReport(errorInfo: ErrorInfo, to url: URL, headers: [String: String]) {
