@@ -29,7 +29,6 @@ public class ErrorHandler {
     public static let shared = ErrorHandler()
     
     private var configuration: InnerLoopConfiguration?
-    private let logger = Logger.shared
     private let queue = DispatchQueue(label: "com.innerloop.errorhandler", qos: .utility)
     
     private init() {}
@@ -42,7 +41,7 @@ public class ErrorHandler {
     /// Report an error
     public func report(error: Error, additionalInfo: [String: String] = [:]) {
         guard let configuration = configuration else {
-            logger.warning("ErrorHandler not configured. Call configure(with:) before reporting errors.")
+            fputs("InnerLoop: ErrorHandler not configured. Call configure(with:) before reporting errors.\n", stderr)
             return
         }
         
@@ -60,8 +59,8 @@ public class ErrorHandler {
             metadata: metadata
         )
         
-        // Log locally
-        logger.error("Error reported: \(errorMessage)")
+        // Log to stderr to avoid circular dependency with Logger
+        fputs("InnerLoop: Error reported: \(errorMessage)\n", stderr)
         
         // Send to remote endpoint if configured
         if let urlString = configuration.errorReportingURI,
@@ -73,7 +72,7 @@ public class ErrorHandler {
     /// Report an error with a custom message
     public func report(message: String, additionalInfo: [String: String] = [:]) {
         guard let configuration = configuration else {
-            logger.warning("ErrorHandler not configured. Call configure(with:) before reporting errors.")
+            fputs("InnerLoop: ErrorHandler not configured. Call configure(with:) before reporting errors.\n", stderr)
             return
         }
         
@@ -90,8 +89,8 @@ public class ErrorHandler {
             metadata: metadata
         )
         
-        // Log locally
-        logger.error("Error reported: \(message)")
+        // Log to stderr to avoid circular dependency with Logger
+        fputs("InnerLoop: Error reported: \(message)\n", stderr)
         
         // Send to remote endpoint if configured
         if let urlString = configuration.errorReportingURI,
@@ -138,18 +137,18 @@ public class ErrorHandler {
                 
                 let task = URLSession.shared.dataTask(with: request) { data, response, error in
                     if let error = error {
-                        self.logger.error("Failed to send error report: \(error.localizedDescription)")
+                        fputs("InnerLoop: Failed to send error report: \(error.localizedDescription)\n", stderr)
                     } else if let httpResponse = response as? HTTPURLResponse {
                         if (200...299).contains(httpResponse.statusCode) {
-                            self.logger.debug("Error report sent successfully")
+                            fputs("InnerLoop: Error report sent successfully\n", stderr)
                         } else {
-                            self.logger.warning("Error report returned status code: \(httpResponse.statusCode)")
+                            fputs("InnerLoop: Error report returned status code: \(httpResponse.statusCode)\n", stderr)
                         }
                     }
                 }
                 task.resume()
             } catch {
-                self.logger.error("Failed to encode error report: \(error.localizedDescription)")
+                fputs("InnerLoop: Failed to encode error report: \(error.localizedDescription)\n", stderr)
             }
         }
     }
