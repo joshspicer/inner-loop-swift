@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  innerloop-service:
+    build: .
+    container_name: innerloop-service
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_PATH=/app/data/innerloop.db
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - ENABLE_LLM=${ENABLE_LLM:-false}
+      - AUTO_ANALYZE_ERRORS=${AUTO_ANALYZE_ERRORS:-false}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-3-5-sonnet-20241022}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITHUB_OWNER=${GITHUB_OWNER:-}
+      - GITHUB_REPO=${GITHUB_REPO:-}
+      - GITHUB_ASSIGNEES=${GITHUB_ASSIGNEES:-}
+      - GITHUB_LABELS=${GITHUB_LABELS:-}
+      - GITHUB_CREATE_ISSUE_ON_ERROR=${GITHUB_CREATE_ISSUE_ON_ERROR:-false}
+      - GITHUB_CREATE_ISSUE_ON_BATCH=${GITHUB_CREATE_ISSUE_ON_BATCH:-false}
+    volumes:
+      - innerloop-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  innerloop-data:
+    driver: local
