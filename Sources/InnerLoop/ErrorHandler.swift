@@ -1,29 +1,5 @@
 import Foundation
 
-/// Error information structure
-public struct ErrorInfo: Codable {
-    public let message: String
-    public let stackTrace: String?
-    public let timestamp: Date
-    public let environment: String
-    public let appVersion: String?
-    public let metadata: [String: String]
-    
-    enum CodingKeys: String, CodingKey {
-        case message, stackTrace, timestamp, environment, appVersion, metadata
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(message, forKey: .message)
-        try container.encodeIfPresent(stackTrace, forKey: .stackTrace)
-        try container.encode(timestamp, forKey: .timestamp)
-        try container.encode(environment, forKey: .environment)
-        try container.encodeIfPresent(appVersion, forKey: .appVersion)
-        try container.encode(metadata, forKey: .metadata)
-    }
-}
-
 /// Error handler for catching and reporting errors
 public class ErrorHandler {
     public static let shared = ErrorHandler()
@@ -48,7 +24,7 @@ public class ErrorHandler {
         let errorMessage = error.localizedDescription
         let stackTrace = Thread.callStackSymbols.joined(separator: "\n")
         
-        let metadata = buildMetadata(from: configuration, additionalInfo: additionalInfo)
+        let metadata = MetadataUtil.buildMetadata(from: configuration, additionalInfo: additionalInfo)
         
         let errorInfo = ErrorInfo(
             message: errorMessage,
@@ -81,7 +57,7 @@ public class ErrorHandler {
         
         let stackTrace = Thread.callStackSymbols.joined(separator: "\n")
         
-        let metadata = buildMetadata(from: configuration, additionalInfo: additionalInfo)
+        let metadata = MetadataUtil.buildMetadata(from: configuration, additionalInfo: additionalInfo)
         
         let errorInfo = ErrorInfo(
             message: message,
@@ -103,23 +79,6 @@ public class ErrorHandler {
             headers["X-Shared-Secret"] = configuration.sharedSecret
             sendErrorReport(errorInfo: errorInfo, to: url, headers: headers)
         }
-    }
-    
-    /// Build metadata dictionary from configuration and additional info
-    private func buildMetadata(from configuration: InnerLoopConfiguration, additionalInfo: [String: String]) -> [String: String] {
-        var metadata = additionalInfo
-        
-        for (key, value) in configuration.metadata {
-            if let stringValue = value as? String {
-                metadata[key] = stringValue
-            } else if let customStringConvertible = value as? CustomStringConvertible {
-                metadata[key] = customStringConvertible.description
-            } else {
-                metadata[key] = "\(value)"
-            }
-        }
-        
-        return metadata
     }
     
     private func sendErrorReport(errorInfo: ErrorInfo, to url: URL, headers: [String: String]) {

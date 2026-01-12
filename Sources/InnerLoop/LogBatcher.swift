@@ -1,33 +1,5 @@
 import Foundation
 
-/// Batch information for logs and errors
-public struct LogBatch: Codable {
-    public let logs: [LogEntry]
-    public let userMessage: String?
-    public let timestamp: Date
-    public let environment: String
-    public let appVersion: String?
-    public let metadata: [String: String]
-
-    enum CodingKeys: String, CodingKey {
-        case logs, userMessage, timestamp, environment, appVersion, metadata
-    }
-}
-
-/// Individual log entry
-public struct LogEntry: Codable {
-    public let message: String
-    public let level: String
-    public let timestamp: Date
-    public let file: String
-    public let function: String
-    public let line: Int
-
-    enum CodingKeys: String, CodingKey {
-        case message, level, timestamp, file, function, line
-    }
-}
-
 /// Batches logs and sends them periodically or on demand
 public class LogBatcher {
     public static let shared = LogBatcher()
@@ -127,7 +99,7 @@ public class LogBatcher {
         // Build batch endpoint URL
         let batchURL = baseURL.deletingLastPathComponent().appendingPathComponent("batch")
 
-        let metadata = buildMetadata(from: configuration)
+        let metadata = MetadataUtil.buildMetadata(from: configuration)
 
         let batch = LogBatch(
             logs: logBuffer,
@@ -175,22 +147,6 @@ public class LogBatcher {
         } catch {
             fputs("InnerLoop: Failed to encode log batch: \(error.localizedDescription)\n", stderr)
         }
-    }
-
-    private func buildMetadata(from configuration: InnerLoopConfiguration) -> [String: String] {
-        var metadata: [String: String] = [:]
-
-        for (key, value) in configuration.metadata {
-            if let stringValue = value as? String {
-                metadata[key] = stringValue
-            } else if let customStringConvertible = value as? CustomStringConvertible {
-                metadata[key] = customStringConvertible.description
-            } else {
-                metadata[key] = "\(value)"
-            }
-        }
-
-        return metadata
     }
 
     deinit {

@@ -13,43 +13,49 @@ final class ErrorHandlerTests: XCTestCase {
     func testErrorHandlerConfiguration() {
         let config = InnerLoopConfiguration(
             errorReportingURI: "https://example.com/errors",
+            appId: "test-app",
+            sharedSecret: "test-secret",
             environment: "test",
             appVersion: "1.0.0"
         )
-        
+
         errorHandler.configure(with: config)
-        
+
         // Configuration should succeed without errors
         XCTAssertTrue(true)
     }
     
     func testReportErrorMessage() {
         let config = InnerLoopConfiguration(
+            appId: "test-app",
+            sharedSecret: "test-secret",
             environment: "test",
             appVersion: "1.0.0"
         )
-        
+
         errorHandler.configure(with: config)
-        
+
         // Should not crash even without URI configured
         errorHandler.report(message: "Test error", additionalInfo: ["key": "value"])
-        
+
         XCTAssertTrue(true)
     }
     
     func testReportError() {
         let config = InnerLoopConfiguration(
+            appId: "test-app",
+            sharedSecret: "test-secret",
             environment: "test",
             appVersion: "1.0.0"
         )
-        
+
         errorHandler.configure(with: config)
-        
+
         let testError = NSError(domain: "TestDomain", code: 123, userInfo: [NSLocalizedDescriptionKey: "Test error"])
-        
+
         // Should not crash
         errorHandler.report(error: testError, additionalInfo: ["userId": "12345"])
-        
+
         XCTAssertTrue(true)
     }
     
