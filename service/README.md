@@ -7,10 +7,13 @@ A dockerized backend service for processing iOS app logs and errors with LLM-pow
 - **Batch Log Processing**: Receives and stores batched logs from iOS apps
 - **Error Tracking**: Captures and stores error reports with full context
 - **LLM Integration**: Automatic analysis of errors and logs using OpenAI or Anthropic
+- **Plugin System**: Extensible architecture with TypeScript-based plugins and lifecycle hooks
+- **GitHub Integration**: Automatically create GitHub issues for errors and user reports
 - **SQLite Database**: Persistent storage of all logs and errors
 - **RESTful API**: Easy-to-use endpoints for querying and managing data
 - **Docker Support**: Easy deployment with Docker and Docker Compose
 - **Health Checks**: Built-in health monitoring
+- **TypeScript**: Fully typed codebase for better maintainability
 
 ## Quick Start
 
@@ -173,6 +176,76 @@ Triggers LLM analysis for a specific batch.
 | `OPENAI_MODEL` | `gpt-4` | OpenAI model to use |
 | `ANTHROPIC_API_KEY` | - | Anthropic API key |
 | `ANTHROPIC_MODEL` | `claude-3-5-sonnet-20241022` | Anthropic model to use |
+| `GITHUB_TOKEN` | - | GitHub personal access token |
+| `GITHUB_OWNER` | - | GitHub repository owner |
+| `GITHUB_REPO` | - | GitHub repository name |
+| `GITHUB_ASSIGNEES` | - | Comma-separated list of GitHub usernames to assign |
+| `GITHUB_LABELS` | - | Comma-separated list of labels to add to issues |
+| `GITHUB_CREATE_ISSUE_ON_ERROR` | `false` | Create issue for every error |
+| `GITHUB_CREATE_ISSUE_ON_BATCH` | `false` | Create issue for user reports |
+
+## Plugin System
+
+The service includes a powerful plugin system for extending functionality. Plugins are written in TypeScript and can hook into various lifecycle events.
+
+### Available Hooks
+
+- `onInit` - Plugin initialization
+- `onErrorReceived` - When error is received
+- `onErrorStored` - After error is saved to database
+- `onErrorAnalyzed` - After LLM analysis of error
+- `onBatchReceived` - When log batch is received
+- `onBatchStored` - After batch is saved to database
+- `onBatchAnalyzed` - After LLM analysis of batch
+- `onError` - When any hook throws an error
+
+### GitHub Plugin
+
+The built-in GitHub plugin automatically creates issues for errors and user reports.
+
+#### Configuration
+
+```bash
+# Enable GitHub integration
+GITHUB_TOKEN=ghp_your_personal_access_token
+GITHUB_OWNER=your-username
+GITHUB_REPO=your-repo
+GITHUB_ASSIGNEES=username1,username2
+GITHUB_LABELS=bug,innerloop
+GITHUB_CREATE_ISSUE_ON_ERROR=false
+GITHUB_CREATE_ISSUE_ON_BATCH=true
+```
+
+#### Features
+
+- Automatically creates GitHub issues with full context
+- Includes stack traces, logs, metadata, and AI analysis
+- Assigns specified users and adds labels
+- Rich formatting with code blocks and structured data
+
+#### Example Issue
+
+When a user reports an issue via shake-to-send, the plugin creates:
+
+```
+Title: [InnerLoop User Report] App crashed when tapping save button
+
+## User Report
+**Environment:** production
+**App Version:** 1.2.3
+
+### User Description
+> App crashed when tapping save button
+
+### Error Logs
+1. [2026-01-12T19:59:58Z] Validation failed: email is required
+   - Location: DataValidator.swift:15 in validate
+
+### AI Analysis
+[Full analysis with root cause and fix suggestions]
+```
+
+For complete plugin documentation and development guide, see [PLUGINS.md](PLUGINS.md).
 
 ## iOS Library Configuration
 
