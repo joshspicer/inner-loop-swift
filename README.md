@@ -275,3 +275,14 @@ MIT License - feel free to use in your projects!
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Running Tests
+
+To run tests locally:
+
+```bash
+./scripts/test.sh
+```
+
+This script handles building the package and running tests on iOS Simulator.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.

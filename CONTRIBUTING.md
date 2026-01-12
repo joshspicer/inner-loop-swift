@@ -32,13 +32,31 @@ swift build
 
 ### Running Tests
 
+The recommended way to run tests is using the provided test script:
+
 ```bash
-swift test
+./scripts/test.sh
 ```
 
-Or in Xcode:
+This script will:
+- Display Swift and Xcode version information
+- Build the package for iOS Simulator
+- Run all tests with code coverage enabled
+
+You can also pass options:
+```bash
+./scripts/test.sh --build-only     # Only build, don't run tests
+./scripts/test.sh --test-only      # Skip build, only run tests
+./scripts/test.sh --no-coverage    # Disable code coverage
+./scripts/test.sh --help           # Show all options
+```
+
+Or run tests in Xcode:
 1. Open Package.swift
 2. Select Product → Test (⌘U)
+
+Note: Since this is an iOS-only package, `swift test` won't work directly.
+Use the test script or Xcode instead.
 
 ## Code Style
 
