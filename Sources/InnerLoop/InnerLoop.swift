@@ -27,15 +27,22 @@ public class InnerLoop {
     /// - Parameter configuration: InnerLoopConfiguration object
     public func initialize(with configuration: InnerLoopConfiguration) {
         self.configuration = configuration
-        
+
         // Configure error handler
         errorHandler.configure(with: configuration)
-        
+
+        // Configure log batcher
+        LogBatcher.shared.configure(
+            with: configuration,
+            maxBufferSize: configuration.maxBufferSize,
+            batchInterval: configuration.batchInterval
+        )
+
         // Enable shake gesture if configured
         if configuration.enableShakeGesture {
             shakeGestureDetector.enable()
         }
-        
+
         logger.info("InnerLoop initialized with environment: \(configuration.environment)")
     }
     

@@ -43,30 +43,36 @@ public class ShakeGestureDetector {
     private func showDebugMenu() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            
+
             let alert = UIAlertController(
                 title: "Debug Menu",
                 message: "InnerLoop Debug Options",
                 preferredStyle: .actionSheet
             )
-            
-            alert.addAction(UIAlertAction(title: "View Logs", style: .default) { _ in
-                self.logger.info("View Logs selected")
-                // Custom implementation can be added via delegate
+
+            alert.addAction(UIAlertAction(title: "Send Logs with Message", style: .default) { _ in
+                self.promptForUserMessage()
             })
-            
-            alert.addAction(UIAlertAction(title: "Clear Cache", style: .default) { _ in
-                self.logger.info("Clear Cache selected")
-                // Custom implementation can be added via delegate
+
+            let bufferSize = LogBatcher.shared.getBufferSize()
+            alert.addAction(UIAlertAction(title: "Send Logs (\(bufferSize) buffered)", style: .default) { _ in
+                self.logger.info("Sending buffered logs")
+                LogBatcher.shared.sendBatch()
             })
-            
+
+            alert.addAction(UIAlertAction(title: "View Buffer Size", style: .default) { _ in
+                let size = LogBatcher.shared.getBufferSize()
+                self.logger.info("Current buffer size: \(size) logs")
+                self.showBufferInfo(size: size)
+            })
+
             alert.addAction(UIAlertAction(title: "Test Error Reporting", style: .default) { _ in
                 self.logger.info("Testing error reporting")
                 ErrorHandler.shared.report(message: "Test error from debug menu")
             })
-            
+
             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-            
+
             if let topController = self.getTopViewController() {
                 // For iPad support
                 if let popoverController = alert.popoverPresentationController {
@@ -74,6 +80,53 @@ public class ShakeGestureDetector {
                     popoverController.sourceRect = CGRect(x: topController.view.bounds.midX, y: topController.view.bounds.midY, width: 0, height: 0)
                     popoverController.permittedArrowDirections = []
                 }
+                topController.present(alert, animated: true)
+            }
+        }
+    }
+
+    private func promptForUserMessage() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            let alert = UIAlertController(
+                title: "Add Context",
+                message: "Describe what you were doing or what went wrong:",
+                preferredStyle: .alert
+            )
+
+            alert.addTextField { textField in
+                textField.placeholder = "e.g., 'App crashed when tapping save button'"
+                textField.autocapitalizationType = .sentences
+            }
+
+            alert.addAction(UIAlertAction(title: "Send", style: .default) { _ in
+                let message = alert.textFields?.first?.text ?? ""
+                self.logger.info("Sending logs with user message: \(message)")
+                LogBatcher.shared.sendBatch(userMessage: message.isEmpty ? nil : message)
+            })
+
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+            if let topController = self.getTopViewController() {
+                topController.present(alert, animated: true)
+            }
+        }
+    }
+
+    private func showBufferInfo(size: Int) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            let alert = UIAlertController(
+                title: "Buffer Info",
+                message: "\(size) logs are currently buffered and will be sent automatically or when you send them manually.",
+                preferredStyle: .alert
+            )
+
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+
+            if let topController = self.getTopViewController() {
                 topController.present(alert, animated: true)
             }
         }
