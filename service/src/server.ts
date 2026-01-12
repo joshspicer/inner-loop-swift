@@ -7,6 +7,7 @@ import { LLMProvider } from './llm-provider';
 import { PluginManager } from './plugin-system';
 import { GitHubPlugin } from './plugins/github-plugin';
 import { ErrorData, BatchData } from './plugin-system';
+import { AuthManager, AuthenticatedRequest } from './auth';
 
 dotenv.config();
 
@@ -15,6 +16,9 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Initialize database
 const dbPath = process.env.DATABASE_PATH || './data/innerloop.db';
@@ -29,6 +33,7 @@ const db = new Database(dbPath);
 db.exec(`
     CREATE TABLE IF NOT EXISTS errors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        app_id TEXT NOT NULL,
         message TEXT NOT NULL,
         stack_trace TEXT,
         timestamp TEXT NOT NULL,
@@ -40,6 +45,7 @@ db.exec(`
 
     CREATE TABLE IF NOT EXISTS log_batches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        app_id TEXT NOT NULL,
         user_message TEXT,
         timestamp TEXT NOT NULL,
         environment TEXT,
@@ -64,11 +70,16 @@ db.exec(`
     );
 
     CREATE INDEX IF NOT EXISTS idx_errors_timestamp ON errors(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_errors_app_id ON errors(app_id);
     CREATE INDEX IF NOT EXISTS idx_batches_timestamp ON log_batches(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_batches_app_id ON log_batches(app_id);
     CREATE INDEX IF NOT EXISTS idx_batch_logs_batch_id ON batch_logs(batch_id);
 `);
 
 console.log('Database initialized at:', dbPath);
+
+// Auth Manager
+const authManager = new AuthManager(db);
 
 // LLM Integration
 const llm = new LLMProvider();
@@ -100,11 +111,88 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Receive error reports
-app.post('/api/errors', async (req: Request, res: Response) => {
-  const errorData: ErrorData = req.body;
+// Web Admin Authentication Middleware
+const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
+
+function authenticateAdmin(req: Request, res: Response, next: Function) {
+  const authHeader = req.header('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const password = authHeader.substring(7);
+  if (password !== adminPassword) {
+    res.status(401).json({ error: 'Invalid password' });
+    return;
+  }
+
+  next();
+}
+
+// Admin API endpoints
+app.post('/admin/login', (req: Request, res: Response) => {
+  const { password } = req.body;
+  if (password === adminPassword) {
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ error: 'Invalid password' });
+  }
+});
+
+app.get('/admin/clients', authenticateAdmin, (req: Request, res: Response) => {
+  const clients = authManager.listClients();
+  res.json(clients);
+});
+
+app.post('/admin/clients', authenticateAdmin, (req: Request, res: Response) => {
+  const { appId, appName, sharedSecret } = req.body;
+
+  if (!appId || !appName || !sharedSecret) {
+    res.status(400).json({ error: 'Missing required fields' });
+    return;
+  }
+
+  try {
+    const client = authManager.createClient(appId, appName, sharedSecret);
+    res.json(client);
+  } catch (error) {
+    res.status(400).json({ error: 'Client already exists or invalid data' });
+  }
+});
+
+app.put('/admin/clients/:appId', authenticateAdmin, (req: Request, res: Response) => {
+  const { appId } = req.params;
+  const updates = req.body;
+
+  try {
+    authManager.updateClient(appId, updates);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to update client' });
+  }
+});
+
+app.delete('/admin/clients/:appId', authenticateAdmin, (req: Request, res: Response) => {
+  const { appId } = req.params;
+
+  try {
+    authManager.deleteClient(appId);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to delete client' });
+  }
+});
+
+// Receive error reports (authenticated)
+app.post('/api/errors', authManager.authenticateClient.bind(authManager), async (req: AuthenticatedRequest, res: Response) => {
+  const errorData: ErrorData = {
+    ...req.body,
+    appId: req.appId!
+  };
 
   console.log('=== Error Report Received ===');
+  console.log('App ID:', errorData.appId);
   console.log('Timestamp:', errorData.timestamp);
   console.log('Environment:', errorData.environment);
   console.log('App Version:', errorData.appVersion);
@@ -117,11 +205,12 @@ app.post('/api/errors', async (req: Request, res: Response) => {
   try {
     // Store error in database
     const stmt = db.prepare(`
-            INSERT INTO errors (message, stack_trace, timestamp, environment, app_version, metadata)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO errors (app_id, message, stack_trace, timestamp, environment, app_version, metadata)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         `);
 
     const result = stmt.run(
+      errorData.appId,
       errorData.message,
       errorData.stackTrace,
       errorData.timestamp,
@@ -164,11 +253,15 @@ app.post('/api/errors', async (req: Request, res: Response) => {
   }
 });
 
-// Receive log batches
-app.post('/api/batch', async (req: Request, res: Response) => {
-  const batchData: BatchData = req.body;
+// Receive log batches (authenticated)
+app.post('/api/batch', authManager.authenticateClient.bind(authManager), async (req: AuthenticatedRequest, res: Response) => {
+  const batchData: BatchData = {
+    ...req.body,
+    appId: req.appId!
+  };
 
   console.log('=== Log Batch Received ===');
+  console.log('App ID:', batchData.appId);
   console.log('Timestamp:', batchData.timestamp);
   console.log('Environment:', batchData.environment);
   console.log('Log Count:', batchData.logs?.length || 0);
@@ -181,11 +274,12 @@ app.post('/api/batch', async (req: Request, res: Response) => {
   try {
     // Store batch in database
     const batchStmt = db.prepare(`
-            INSERT INTO log_batches (user_message, timestamp, environment, app_version, metadata, log_count)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO log_batches (app_id, user_message, timestamp, environment, app_version, metadata, log_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         `);
 
     const batchResult = batchStmt.run(
+      batchData.appId,
       batchData.userMessage || null,
       batchData.timestamp,
       batchData.environment,
@@ -257,12 +351,21 @@ app.post('/api/batch', async (req: Request, res: Response) => {
 app.get('/api/errors', (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
-    const stmt = db.prepare(`
-            SELECT * FROM errors
-            ORDER BY created_at DESC
-            LIMIT ?
-        `);
-    const errors = stmt.all(limit);
+    const appId = req.query.appId as string;
+
+    let query = 'SELECT * FROM errors';
+    const params: any[] = [];
+
+    if (appId) {
+      query += ' WHERE app_id = ?';
+      params.push(appId);
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT ?';
+    params.push(limit);
+
+    const stmt = db.prepare(query);
+    const errors = stmt.all(...params);
 
     res.json({
       count: errors.length,
@@ -281,12 +384,21 @@ app.get('/api/errors', (req: Request, res: Response) => {
 app.get('/api/batches', (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
-    const stmt = db.prepare(`
-            SELECT * FROM log_batches
-            ORDER BY created_at DESC
-            LIMIT ?
-        `);
-    const batches = stmt.all(limit);
+    const appId = req.query.appId as string;
+
+    let query = 'SELECT * FROM log_batches';
+    const params: any[] = [];
+
+    if (appId) {
+      query += ' WHERE app_id = ?';
+      params.push(appId);
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT ?';
+    params.push(limit);
+
+    const stmt = db.prepare(query);
+    const batches = stmt.all(...params);
 
     res.json({
       count: batches.length,
@@ -343,6 +455,7 @@ app.post('/api/batches/:id/analyze', async (req: Request, res: Response) => {
     const logs = logsStmt.all(batchId);
 
     const batchData: BatchData = {
+      appId: batch.app_id,
       userMessage: batch.user_message,
       timestamp: batch.timestamp,
       environment: batch.environment,
@@ -394,7 +507,8 @@ app.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`LLM Provider: ${process.env.LLM_PROVIDER || 'openai'}`);
   console.log(`LLM Enabled: ${process.env.ENABLE_LLM || 'false'}`);
-  console.log('\nAvailable endpoints:');
+  console.log(`Admin Password: ${adminPassword === 'admin' ? 'DEFAULT (change this!)' : 'configured'}`);
+  console.log('\nAPI endpoints:');
   console.log(`  POST   http://localhost:${PORT}/api/errors`);
   console.log(`  POST   http://localhost:${PORT}/api/batch`);
   console.log(`  GET    http://localhost:${PORT}/api/errors`);
@@ -402,4 +516,11 @@ app.listen(PORT, () => {
   console.log(`  GET    http://localhost:${PORT}/api/batches/:id`);
   console.log(`  POST   http://localhost:${PORT}/api/batches/:id/analyze`);
   console.log(`  GET    http://localhost:${PORT}/health`);
+  console.log('\nAdmin endpoints:');
+  console.log(`  POST   http://localhost:${PORT}/admin/login`);
+  console.log(`  GET    http://localhost:${PORT}/admin/clients`);
+  console.log(`  POST   http://localhost:${PORT}/admin/clients`);
+  console.log(`  PUT    http://localhost:${PORT}/admin/clients/:appId`);
+  console.log(`  DELETE http://localhost:${PORT}/admin/clients/:appId`);
+  console.log(`\nWeb Admin: http://localhost:${PORT}/`);
 });

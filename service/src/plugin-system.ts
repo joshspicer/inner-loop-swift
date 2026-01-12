@@ -1,4 +1,5 @@
 export interface ErrorData {
+  appId: string;
   message: string;
   stackTrace?: string;
   timestamp: string;
@@ -17,6 +18,7 @@ export interface LogEntry {
 }
 
 export interface BatchData {
+  appId: string;
   userMessage?: string;
   timestamp: string;
   environment: string;

@@ -10,6 +10,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - DATABASE_PATH=/app/data/innerloop.db
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - ENABLE_LLM=${ENABLE_LLM:-false}
       - AUTO_ANALYZE_ERRORS=${AUTO_ANALYZE_ERRORS:-false}
       - LLM_PROVIDER=${LLM_PROVIDER:-openai}
@@ -17,6 +18,13 @@ services:
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-3-5-sonnet-20241022}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITHUB_OWNER=${GITHUB_OWNER:-}
+      - GITHUB_REPO=${GITHUB_REPO:-}
+      - GITHUB_ASSIGNEES=${GITHUB_ASSIGNEES:-}
+      - GITHUB_LABELS=${GITHUB_LABELS:-}
+      - GITHUB_CREATE_ISSUE_ON_ERROR=${GITHUB_CREATE_ISSUE_ON_ERROR:-false}
+      - GITHUB_CREATE_ISSUE_ON_BATCH=${GITHUB_CREATE_ISSUE_ON_BATCH:-false}
     volumes:
       - innerloop-data:/app/data
     restart: unless-stopped

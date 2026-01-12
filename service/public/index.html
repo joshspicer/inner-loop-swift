@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InnerLoop Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="login-container" class="container">
+        <div class="login-box">
+            <h1>InnerLoop Admin</h1>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div id="login-error" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-container" class="container" style="display: none;">
+        <header>
+            <h1>InnerLoop Admin</h1>
+            <button id="logout-btn" class="btn btn-secondary">Logout</button>
+        </header>
+
+        <main>
+            <section class="actions">
+                <button id="add-client-btn" class="btn btn-primary">Add New Client</button>
+                <button id="refresh-btn" class="btn btn-secondary">Refresh</button>
+            </section>
+
+            <section id="clients-section">
+                <h2>Registered Clients</h2>
+                <div id="clients-list" class="clients-list">
+                    <p class="loading">Loading clients...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add/Edit Client Modal -->
+    <div id="client-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Add New Client</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="client-form">
+                <div class="form-group">
+                    <label for="client-app-id">App ID *</label>
+                    <input type="text" id="client-app-id" name="appId" required
+                           placeholder="com.example.myapp">
+                    <small>Bundle identifier or unique app identifier</small>
+                </div>
+                <div class="form-group">
+                    <label for="client-app-name">App Name *</label>
+                    <input type="text" id="client-app-name" name="appName" required
+                           placeholder="My App">
+                </div>
+                <div class="form-group">
+                    <label for="client-shared-secret">Shared Secret *</label>
+                    <input type="text" id="client-shared-secret" name="sharedSecret" required>
+                    <button type="button" id="generate-secret-btn" class="btn btn-small">Generate Random</button>
+                    <small>Store this securely in your app configuration</small>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="client-enabled" name="enabled" checked>
+                        Enabled
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Client</button>
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                </div>
+                <div id="form-error" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Confirm Delete</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this client?</p>
+                <p class="delete-client-info"><strong id="delete-client-name"></strong></p>
+                <p class="warning">This action cannot be undone.</p>
+            </div>
+            <div class="form-actions">
+                <button id="confirm-delete-btn" class="btn btn-danger">Delete</button>
+                <button class="btn btn-secondary cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

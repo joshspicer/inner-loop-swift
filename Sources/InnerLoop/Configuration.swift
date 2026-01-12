@@ -5,6 +5,12 @@ public struct InnerLoopConfiguration {
     /// The URI endpoint where errors and exceptions should be reported
     public var errorReportingURI: String?
 
+    /// Application identifier (e.g., bundle ID for iOS apps)
+    public var appId: String
+
+    /// Shared secret for authentication with the server
+    public var sharedSecret: String
+
     /// Enable device shake gesture for debugging
     public var enableShakeGesture: Bool
 
@@ -28,6 +34,8 @@ public struct InnerLoopConfiguration {
 
     public init(
         errorReportingURI: String? = nil,
+        appId: String,
+        sharedSecret: String,
         enableShakeGesture: Bool = true,
         customHeaders: [String: String] = [:],
         environment: String = "development",
@@ -37,6 +45,8 @@ public struct InnerLoopConfiguration {
         batchInterval: TimeInterval = 300
     ) {
         self.errorReportingURI = errorReportingURI
+        self.appId = appId
+        self.sharedSecret = sharedSecret
         self.enableShakeGesture = enableShakeGesture
         self.customHeaders = customHeaders
         self.environment = environment

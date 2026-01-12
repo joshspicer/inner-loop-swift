@@ -154,6 +154,8 @@ public class LogBatcher {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
             // Add custom headers
+            request.setValue(configuration.appId, forHTTPHeaderField: "X-App-Id")
+            request.setValue(configuration.sharedSecret, forHTTPHeaderField: "X-Shared-Secret")
             for (key, value) in configuration.customHeaders {
                 request.setValue(value, forHTTPHeaderField: key)
             }
