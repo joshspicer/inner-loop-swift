@@ -56,14 +56,14 @@ docker run -d \
   -p 3000:3000 \
   -v innerloop-data:/app/data \
   --name innerloop-service \
-  ghcr.io/joshspicer/inner-loop-swift/innerloop-service:latest
+  ghcr.io/joshspicer/inner-loop-swift/innerloop:latest
 
 # Or use a specific commit SHA
 docker run -d \
   -p 3000:3000 \
   -v innerloop-data:/app/data \
   --name innerloop-service \
-  ghcr.io/joshspicer/inner-loop-swift/innerloop-service:main-abc1234
+  ghcr.io/joshspicer/inner-loop-swift/innerloop:main-abc1234
 ```
 
 ### Using Docker (Build Locally)

@@ -3,7 +3,7 @@ version: '3.8'
 services:
   innerloop-service:
     # Use pre-built image from GitHub Container Registry (recommended)
-    # image: ghcr.io/joshspicer/inner-loop-swift/innerloop-service:latest
+    # image: ghcr.io/joshspicer/inner-loop-swift/innerloop:latest
     # Or build locally from source
     build: .
     container_name: innerloop-service
