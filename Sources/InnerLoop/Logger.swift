@@ -1,48 +1,5 @@
 import Foundation
 
-/// Log level enumeration for categorizing log messages
-public enum LogLevel: Int, Comparable, CustomStringConvertible {
-    case debug = 0
-    case info = 1
-    case warning = 2
-    case error = 3
-    
-    public var description: String {
-        switch self {
-        case .debug: return "DEBUG"
-        case .info: return "INFO"
-        case .warning: return "WARNING"
-        case .error: return "ERROR"
-        }
-    }
-    
-    public static func < (lhs: LogLevel, rhs: LogLevel) -> Bool {
-        return lhs.rawValue < rhs.rawValue
-    }
-}
-
-/// Protocol for log destinations
-public protocol LogDestination {
-    func write(message: String, level: LogLevel, timestamp: Date, file: String, function: String, line: Int)
-}
-
-/// Console log destination
-public class ConsoleLogDestination: LogDestination {
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
-        return formatter
-    }()
-    
-    public init() {}
-    
-    public func write(message: String, level: LogLevel, timestamp: Date, file: String, function: String, line: Int) {
-        let timeString = dateFormatter.string(from: timestamp)
-        let filename = (file as NSString).lastPathComponent
-        print("[\(timeString)] [\(level.description)] [\(filename):\(line)] \(function) - \(message)")
-    }
-}
-
 /// Generic Logger for InnerLoop
 public class Logger {
     public static let shared = Logger()
