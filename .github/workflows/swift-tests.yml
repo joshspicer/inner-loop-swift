@@ -20,25 +20,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Display Swift version
-        run: swift --version
-
-      - name: Build Swift package
-        run: swift build
-
-      - name: Run Swift tests
-        run: swift test --enable-code-coverage
-
-      - name: Generate code coverage report
+      - name: Display Swift and Xcode version
         run: |
-          xcrun llvm-cov export -format="lcov" \
-            .build/debug/InnerLoopPackageTests.xctest/Contents/MacOS/InnerLoopPackageTests \
-            -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
-        continue-on-error: true
+          swift --version
+          xcodebuild -version
 
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage.lcov
-          fail_ci_if_error: false
-        continue-on-error: true
+      - name: List available iOS simulators
+        run: xcrun simctl list devices available
+
+      - name: Build Swift package for iOS
+        run: |
+          xcodebuild build \
+            -scheme InnerLoop \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -enableCodeCoverage YES
+
+      - name: Run Swift tests on iOS Simulator
+        run: |
+          xcodebuild test \
+            -scheme InnerLoop \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -enableCodeCoverage YES
