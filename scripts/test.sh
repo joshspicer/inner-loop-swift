@@ -94,11 +94,9 @@ if [ "$TEST_ONLY" = false ]; then
     xcodebuild build \
         -scheme "$SCHEME" \
         -destination "$DESTINATION" \
-        -enableCodeCoverage "$ENABLE_COVERAGE" \
         | xcpretty --simple || xcodebuild build \
             -scheme "$SCHEME" \
-            -destination "$DESTINATION" \
-            -enableCodeCoverage "$ENABLE_COVERAGE"
+            -destination "$DESTINATION"
 
     print_info "Build completed successfully!"
     echo ""
