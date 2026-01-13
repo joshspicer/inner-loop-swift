@@ -9,7 +9,7 @@
 <body>
     <div id="login-container" class="container">
         <div class="login-box">
-            <h1>InnerLoop Admin</h1>
+            <h1>🔄 InnerLoop Admin</h1>
             <form id="login-form">
                 <div class="form-group">
                     <label for="password">Password</label>
@@ -23,20 +23,90 @@
 
     <div id="admin-container" class="container" style="display: none;">
         <header>
-            <h1>InnerLoop Admin</h1>
-            <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            <h1>🔄 InnerLoop Admin</h1>
+            <div class="header-right">
+                <span id="stats-summary" class="stats-summary"></span>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
         </header>
 
-        <main>
-            <section class="actions">
-                <button id="add-client-btn" class="btn btn-primary">Add New Client</button>
-                <button id="refresh-btn" class="btn btn-secondary">Refresh</button>
-            </section>
+        <!-- Tab Navigation -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="clients">👥 Clients</button>
+            <button class="tab-btn" data-tab="logs">📋 Logs</button>
+            <button class="tab-btn" data-tab="plugins">🔌 Plugins</button>
+        </nav>
 
-            <section id="clients-section">
-                <h2>Registered Clients</h2>
+        <main>
+            <!-- Clients Tab -->
+            <section id="clients-tab" class="tab-content active">
+                <div class="section-header">
+                    <h2>Registered Clients</h2>
+                    <div class="section-actions">
+                        <button id="add-client-btn" class="btn btn-primary">Add New Client</button>
+                        <button id="refresh-clients-btn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                </div>
                 <div id="clients-list" class="clients-list">
                     <p class="loading">Loading clients...</p>
+                </div>
+            </section>
+
+            <!-- Logs Tab -->
+            <section id="logs-tab" class="tab-content">
+                <div class="section-header">
+                    <h2>Error & Batch Logs</h2>
+                    <div class="section-actions">
+                        <select id="logs-filter-app">
+                            <option value="">All Apps</option>
+                        </select>
+                        <button id="refresh-logs-btn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                </div>
+
+                <!-- Sub-tabs for errors/batches -->
+                <div class="sub-tabs">
+                    <button class="sub-tab-btn active" data-subtab="errors">Errors</button>
+                    <button class="sub-tab-btn" data-subtab="batches">Batches</button>
+                </div>
+
+                <!-- Errors Section -->
+                <div id="errors-section" class="sub-tab-content active">
+                    <div id="errors-list" class="logs-table-container">
+                        <p class="loading">Loading errors...</p>
+                    </div>
+                </div>
+
+                <!-- Batches Section -->
+                <div id="batches-section" class="sub-tab-content">
+                    <div id="batches-list" class="logs-table-container">
+                        <p class="loading">Loading batches...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Plugins Tab -->
+            <section id="plugins-tab" class="tab-content">
+                <div class="section-header">
+                    <h2>Plugin Configuration</h2>
+                    <div class="section-actions">
+                        <button id="add-plugin-btn" class="btn btn-primary">Configure Plugin</button>
+                        <button id="refresh-plugins-btn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                </div>
+                <div id="plugins-list" class="plugins-list">
+                    <p class="loading">Loading plugins...</p>
+                </div>
+
+                <div class="plugin-docs">
+                    <h3>📘 Plugin System</h3>
+                    <p>Configure plugins to extend InnerLoop's functionality. Each plugin can respond to specific lifecycle hooks.</p>
+                    <div class="plugin-doc-card">
+                        <h4>🔗 GitHub Plugin</h4>
+                        <p>Automatically creates GitHub issues from errors and user reports.</p>
+                        <p><strong>Configuration:</strong> Token, Owner, Repo, Labels, Assignees</p>
+                        <p><strong>Hooks:</strong> Configure which events trigger issue creation (onErrorStored, onBatchStored)</p>
+                    </div>
                 </div>
             </section>
         </main>
@@ -90,13 +160,130 @@
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete this client?</p>
-                <p class="delete-client-info"><strong id="delete-client-name"></strong></p>
+                <p>Are you sure you want to delete this item?</p>
+                <p class="delete-client-info"><strong id="delete-item-name"></strong></p>
                 <p class="warning">This action cannot be undone.</p>
             </div>
             <div class="form-actions">
                 <button id="confirm-delete-btn" class="btn btn-danger">Delete</button>
                 <button class="btn btn-secondary cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plugin Config Modal -->
+    <div id="plugin-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="plugin-modal-title">Configure Plugin</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="plugin-form">
+                <div class="form-group">
+                    <label for="plugin-name">Plugin Name *</label>
+                    <select id="plugin-name" name="pluginName" required>
+                        <option value="">Select a plugin...</option>
+                        <option value="github">GitHub Plugin</option>
+                    </select>
+                </div>
+                <!-- Hooks Configuration (shown for all plugins) -->
+                <div id="hooks-config" class="plugin-config-section" style="display: none;">
+                    <h3>Enabled Hooks</h3>
+                    <p class="form-help">Select which events this plugin should respond to:</p>
+                    <div class="hooks-grid">
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="hook-onInit" name="hooks.onInit" checked>
+                                onInit - Plugin initialization
+                            </label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="hook-onErrorReceived" name="hooks.onErrorReceived">
+                                onErrorReceived - When error POST is received
+                            </label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="hook-onErrorStored" name="hooks.onErrorStored" checked>
+                                onErrorStored - After error is saved to DB
+                            </label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="hook-onBatchReceived" name="hooks.onBatchReceived">
+                                onBatchReceived - When batch POST is received
+                            </label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="hook-onBatchStored" name="hooks.onBatchStored" checked>
+                                onBatchStored - After batch is saved to DB
+                            </label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="hook-onError" name="hooks.onError" checked>
+                                onError - When any hook throws an error
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="github-config" class="plugin-config-section" style="display: none;">
+                    <h3>GitHub Plugin Configuration</h3>
+                    <div class="form-group">
+                        <label for="gh-token">Personal Access Token *</label>
+                        <input type="password" id="gh-token" name="token" placeholder="ghp_xxxxxxxxxxxx">
+                        <small>Create at: GitHub → Settings → Developer settings → Personal Access Tokens</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="gh-owner">Repository Owner *</label>
+                        <input type="text" id="gh-owner" name="owner" placeholder="username or organization">
+                    </div>
+                    <div class="form-group">
+                        <label for="gh-repo">Repository Name *</label>
+                        <input type="text" id="gh-repo" name="repo" placeholder="my-repo">
+                    </div>
+                    <div class="form-group">
+                        <label for="gh-labels">Labels (comma-separated)</label>
+                        <input type="text" id="gh-labels" name="labels" placeholder="bug, innerloop, critical">
+                    </div>
+                    <div class="form-group">
+                        <label for="gh-assignees">Assignees (comma-separated)</label>
+                        <input type="text" id="gh-assignees" name="assignees" placeholder="user1, user2">
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="gh-require-user-message" name="requireUserMessage" checked>
+                            Only create issue for batches with user message
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="plugin-enabled" name="enabled" checked>
+                        Enable Plugin
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Plugin</button>
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                </div>
+                <div id="plugin-form-error" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Log Detail Modal -->
+    <div id="log-detail-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="log-detail-title">Log Details</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="log-detail-content" class="log-detail-content">
+                <!-- Content populated by JS -->
             </div>
         </div>
     </div>

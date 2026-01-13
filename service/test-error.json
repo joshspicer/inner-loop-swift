@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-01-13T15:42:00.000Z",
+  "message": "Fatal error: Application crashed",
+  "stackTrace": "Error: Null pointer exception\n  at handleClick (App.swift:42)\n  at Button.action (ContentView.swift:100)\n  at UIApplication.main (UIApplicationMain.swift:10)",
+  "level": "ERROR",
+  "category": "Runtime",
+  "environment": "development",
+  "appVersion": "1.0.0",
+  "metadata": {
+    "deviceModel": "iPhone 15 Pro",
+    "osVersion": "iOS 17.2",
+    "memoryUsage": "234MB"
+  }
+}

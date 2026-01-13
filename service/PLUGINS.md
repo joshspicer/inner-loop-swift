@@ -10,14 +10,25 @@ Plugins are written in TypeScript and implement the `Plugin` abstract class. The
 
 | Hook | When Triggered | Context |
 |------|----------------|---------|
-| `onInit` | When plugin is initialized | `db`, `llm` |
+| `onInit` | When plugin is initialized | `db` |
 | `onErrorReceived` | When error POST received | `errorData` |
 | `onErrorStored` | After error saved to DB | `errorData`, `errorId` |
-| `onErrorAnalyzed` | After LLM analysis complete | `errorData`, `errorId`, `analysis` |
 | `onBatchReceived` | When batch POST received | `batchData` |
 | `onBatchStored` | After batch saved to DB | `batchData`, `batchId` |
-| `onBatchAnalyzed` | After LLM analysis complete | `batchData`, `batchId`, `analysis` |
 | `onError` | When any hook throws error | `error`, plus original context |
+
+## Configuring Plugins via Admin UI
+
+The easiest way to configure plugins is through the **Admin UI** at `http://localhost:7990/admin`:
+
+1. Navigate to the **Plugins** tab
+2. Click **Configure Plugin**
+3. Select the plugin type (e.g., GitHub)
+4. Fill in the required configuration
+5. Enable/disable as needed
+6. Save
+
+Plugin configurations are stored in the database and loaded automatically on startup.
 
 ## Creating a Plugin
 
@@ -46,14 +57,27 @@ export class MyPlugin extends Plugin {
     // Setup code here
   }
 
-  async onErrorAnalyzed(context: PluginContext, hookContext: HookContext): Promise<void> {
-    const { errorData, analysis } = hookContext;
+  async onErrorStored(context: PluginContext, hookContext: HookContext): Promise<void> {
+    const { errorData, errorId } = hookContext;
 
-    // Do something with the error and analysis
+    // Do something with the error
     await this.sendToWebhook({
       type: 'error',
       data: errorData,
-      analysis: analysis
+      errorId
+    });
+  }
+
+  async onBatchStored(context: PluginContext, hookContext: HookContext): Promise<void> {
+    const { batchData, batchId } = hookContext;
+
+    // Only process batches with user messages
+    if (!batchData?.userMessage) return;
+
+    await this.sendToWebhook({
+      type: 'user-report',
+      data: batchData,
+      batchId
     });
   }
 
@@ -65,16 +89,18 @@ export class MyPlugin extends Plugin {
 
 ### 2. Register Plugin
 
-In `src/server.ts`, register your plugin:
+Plugins can be registered programmatically in `src/server.ts` or configured via the Admin UI.
+
+**Programmatic Registration:**
 
 ```typescript
 import { MyPlugin } from './plugins/my-plugin';
 
 // After PluginManager initialization
-if (process.env.MY_PLUGIN_ENABLED === 'true') {
+if (process.env.PLUGIN_MYPLUGIN_ENABLED === 'true') {
   const myPlugin = new MyPlugin({
-    apiKey: process.env.MY_PLUGIN_API_KEY!,
-    webhookUrl: process.env.MY_PLUGIN_WEBHOOK_URL!,
+    apiKey: process.env.PLUGIN_MYPLUGIN_API_KEY!,
+    webhookUrl: process.env.PLUGIN_MYPLUGIN_WEBHOOK_URL!,
   });
   pluginManager.register(myPlugin);
 }
@@ -86,9 +112,9 @@ Add environment variables to `.env.example`:
 
 ```bash
 # MyPlugin Configuration
-MY_PLUGIN_ENABLED=false
-MY_PLUGIN_API_KEY=your-api-key
-MY_PLUGIN_WEBHOOK_URL=https://your-webhook.com
+PLUGIN_MYPLUGIN_ENABLED=false
+PLUGIN_MYPLUGIN_API_KEY=your-api-key
+PLUGIN_MYPLUGIN_WEBHOOK_URL=https://your-webhook.com
 ```
 
 ## Built-in Plugins
@@ -97,22 +123,35 @@ MY_PLUGIN_WEBHOOK_URL=https://your-webhook.com
 
 Automatically creates GitHub issues when errors occur or users report issues.
 
-#### Configuration
+#### Configuration via Admin UI
+
+1. Go to Admin → Plugins → Configure Plugin
+2. Select "GitHub Plugin"
+3. Fill in:
+   - **Personal Access Token**: Your GitHub PAT with `repo` scope
+   - **Repository Owner**: Username or organization
+   - **Repository Name**: Target repo for issues
+   - **Labels**: Comma-separated labels (e.g., `bug, innerloop`)
+   - **Assignees**: Comma-separated GitHub usernames
+   - **Create issue on error**: Enable to create issue for each error
+   - **Create issue on batch**: Enable to create issue for user reports
+
+#### Configuration via Environment Variables
 
 ```bash
 # GitHub Plugin Configuration
-GITHUB_TOKEN=ghp_your_token_here
-GITHUB_OWNER=your-github-username
-GITHUB_REPO=your-repo-name
-GITHUB_ASSIGNEES=username1,username2
-GITHUB_LABELS=bug,innerloop
-GITHUB_CREATE_ISSUE_ON_ERROR=false
-GITHUB_CREATE_ISSUE_ON_BATCH=true
+PLUGIN_GITHUB_TOKEN=ghp_your_token_here
+PLUGIN_GITHUB_OWNER=your-github-username
+PLUGIN_GITHUB_REPO=your-repo-name
+PLUGIN_GITHUB_ASSIGNEES=username1,username2
+PLUGIN_GITHUB_LABELS=bug,innerloop
+PLUGIN_GITHUB_CREATE_ISSUE_ON_ERROR=false
+PLUGIN_GITHUB_CREATE_ISSUE_ON_BATCH=true
 ```
 
 #### Features
 
-- **Error Issues**: Creates detailed issues with stack trace, metadata, and AI analysis
+- **Error Issues**: Creates detailed issues with stack trace and metadata
 - **Batch Issues**: Creates issues from user reports with log context
 - **Auto-assign**: Automatically assigns specified GitHub users
 - **Labels**: Adds custom labels to issues
@@ -122,12 +161,13 @@ GITHUB_CREATE_ISSUE_ON_BATCH=true
 
 When a user reports an issue via shake-to-send:
 
-```
+```markdown
 Title: [InnerLoop User Report] App crashed when tapping save button
 
 ## User Report
 
 **Batch ID:** 123
+**App ID:** com.example.myapp
 **Environment:** production
 **App Version:** 1.2.3
 **Timestamp:** 2026-01-12T20:00:00Z
@@ -144,12 +184,17 @@ Title: [InnerLoop User Report] App crashed when tapping save button
 2. **[2026-01-12T19:59:59Z]** Failed to save user data
    - Location: `UserService.swift:42` in `saveUser`
 
-### AI Analysis
+### Warning Logs
 
-[Full AI-powered analysis of the issue with root cause and fix suggestions]
+1. **[2026-01-12T19:59:50Z]** Memory usage above 80%
+
+### Recent Activity (Info Logs)
+
+1. [2026-01-12T19:59:45Z] User navigated to settings
+2. [2026-01-12T19:59:55Z] User tapped save button
 
 ---
-*This issue was automatically created by InnerLoop from a user report*
+*This issue was automatically created by [InnerLoop](https://github.com/joshspicer/inner-loop-swift) from a user report*
 ```
 
 ## Advanced Plugin Patterns
@@ -157,7 +202,7 @@ Title: [InnerLoop User Report] App crashed when tapping save button
 ### Conditional Execution
 
 ```typescript
-async onBatchAnalyzed(context: PluginContext, hookContext: HookContext): Promise<void> {
+async onBatchStored(context: PluginContext, hookContext: HookContext): Promise<void> {
   const { batchData } = hookContext;
 
   // Only process production errors
@@ -187,7 +232,7 @@ async onErrorStored(context: PluginContext, hookContext: HookContext): Promise<v
 ### Error Handling
 
 ```typescript
-async onBatchAnalyzed(context: PluginContext, hookContext: HookContext): Promise<void> {
+async onBatchStored(context: PluginContext, hookContext: HookContext): Promise<void> {
   try {
     // Your logic here
     await this.processData(hookContext.batchData);
@@ -256,20 +301,25 @@ export class SlackPlugin extends Plugin {
     this.config = config;
   }
 
-  async onBatchAnalyzed(context: PluginContext, hookContext: HookContext): Promise<void> {
-    const { batchData, analysis } = hookContext;
+  async onBatchStored(context: PluginContext, hookContext: HookContext): Promise<void> {
+    const { batchData, batchId } = hookContext;
 
     if (!batchData?.userMessage) {
       return; // Only notify for user reports
     }
 
+    // Count error logs
+    const errorCount = (batchData.logs || []).filter(
+      (log: any) => log.level === 'ERROR'
+    ).length;
+
     const message = {
       channel: this.config.channel,
       username: this.config.username || 'InnerLoop',
-      text: `New user report: ${batchData.userMessage}`,
+      text: `🔔 New user report: ${batchData.userMessage}`,
       attachments: [
         {
-          color: 'danger',
+          color: errorCount > 0 ? 'danger' : 'warning',
           fields: [
             {
               title: 'Environment',
@@ -281,8 +331,17 @@ export class SlackPlugin extends Plugin {
               value: batchData.appVersion || 'Unknown',
               short: true,
             },
+            {
+              title: 'Error Logs',
+              value: errorCount.toString(),
+              short: true,
+            },
+            {
+              title: 'Batch ID',
+              value: batchId?.toString() || 'N/A',
+              short: true,
+            },
           ],
-          text: analysis?.substring(0, 500) + '...',
         },
       ],
     };
@@ -333,7 +392,7 @@ describe('MyPlugin', () => {
       webhookUrl: 'https://test.com',
     });
 
-    const context = { db: mockDb, llm: mockLlm };
+    const context = { db: mockDb };
     await plugin.onInit(context);
 
     // Assert initialization

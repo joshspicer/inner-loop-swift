@@ -346,7 +346,7 @@ struct EndpointSettingsView: View {
                                 Text("Current Endpoint")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
-                                Text(viewModel.endpointString)
+                                Text("\(EndpointManager.shared.scheme)://\(viewModel.endpointString)")
                                     .font(.system(.body, design: .monospaced))
                                     .foregroundColor(.primary)
                             }
@@ -413,8 +413,13 @@ struct EndpointSettingsView: View {
                                 .multilineTextAlignment(.trailing)
                                 .keyboardType(.numberPad)
                         }
+                        
+                        Toggle("Use HTTPS", isOn: $viewModel.useHTTPS)
+                            .tint(.blue)
                     } header: {
                         Text("Manual Configuration")
+                    } footer: {
+                        Text("Enable for secure connections (requires valid SSL certificate). Leave disabled for local development.")
                     }
                     
                     // Test Connection Section
@@ -501,6 +506,12 @@ class EndpointSettingsViewModel: ObservableObject {
         }
     }
     
+    @Published var useHTTPS: Bool {
+        didSet {
+            EndpointManager.shared.useHTTPS = useHTTPS
+        }
+    }
+    
     @Published var isTesting = false
     @Published var lastTestResult: Bool?
     @Published var testResultMessage: String?
@@ -522,6 +533,7 @@ class EndpointSettingsViewModel: ObservableObject {
         self.isEnabled = EndpointManager.shared.isEnabled
         self.host = EndpointManager.shared.host
         self.portString = String(EndpointManager.shared.port)
+        self.useHTTPS = EndpointManager.shared.useHTTPS
     }
     
     func selectEndpoint(host: String, port: Int) {
@@ -542,10 +554,12 @@ class EndpointSettingsViewModel: ObservableObject {
         self.host = EndpointManager.shared.host
         self.portString = String(EndpointManager.shared.port)
         self.isEnabled = EndpointManager.shared.isEnabled
+        self.useHTTPS = EndpointManager.shared.useHTTPS
     }
     
     func testConnection() {
-        guard let url = URL(string: "http://\(host):\(port)/health") else {
+        let scheme = EndpointManager.shared.scheme
+        guard let url = URL(string: "\(scheme)://\(host):\(port)/health") else {
             testResultMessage = "Invalid URL"
             lastTestResult = false
             return

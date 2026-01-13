@@ -25,16 +25,6 @@ export class AuthManager {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS client_plugins (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        client_id INTEGER NOT NULL,
-        plugin_name TEXT NOT NULL,
-        config TEXT,
-        enabled BOOLEAN DEFAULT TRUE,
-        FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
-        UNIQUE(client_id, plugin_name)
-      );
-
       CREATE INDEX IF NOT EXISTS idx_clients_app_id ON clients(app_id);
     `);
   }

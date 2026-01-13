@@ -1,0 +1,37 @@
+{
+  "timestamp": "2026-01-13T15:40:00.000Z",
+  "environment": "development",
+  "appVersion": "1.0.0",
+  "metadata": {
+    "deviceModel": "iPhone 15 Pro",
+    "osVersion": "iOS 17.2"
+  },
+  "sessionId": "test-session-1",
+  "userMessage": "Testing PLUGIN_GITHUB_* environment variables and hooks system!",
+  "logs": [
+    {
+      "timestamp": "2026-01-13T15:40:00.000Z",
+      "level": "INFO",
+      "category": "Test",
+      "message": "First log message"
+    },
+    {
+      "timestamp": "2026-01-13T15:40:01.000Z",
+      "level": "DEBUG",
+      "category": "Test",
+      "message": "Debug information with details"
+    },
+    {
+      "timestamp": "2026-01-13T15:40:02.000Z",
+      "level": "WARNING",
+      "category": "Test",
+      "message": "Warning: Something might be wrong"
+    },
+    {
+      "timestamp": "2026-01-13T15:40:03.000Z",
+      "level": "ERROR",
+      "category": "Test",
+      "message": "Error: Something went wrong!"
+    }
+  ]
+}

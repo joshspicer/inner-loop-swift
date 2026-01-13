@@ -9,6 +9,7 @@ public class EndpointManager {
     private let endpointKey = "com.innerloop.endpoint"
     private let portKey = "com.innerloop.port"
     private let enabledKey = "com.innerloop.enabled"
+    private let useHTTPSKey = "com.innerloop.useHTTPS"
     
     // MARK: - Default Values
     
@@ -16,10 +17,13 @@ public class EndpointManager {
     public static var defaultHost: String = "localhost"
     
     /// Default endpoint port
-    public static var defaultPort: Int = 8080
+    public static var defaultPort: Int = 7990
+    to using HTTPS (set to false for local development)
+    public static var defaultUseHTTPS: Bool = false
     
+    /// Default 
     /// Default path for log batches
-    public static var batchPath: String = "/api/logs/batch"
+    public static var batchPath: String = "/api/batch"
     
     /// Default path for error reports
     public static var errorPath: String = "/api/errors"
@@ -52,10 +56,24 @@ public class EndpointManager {
         set {
             userDefaults.set(newValue, forKey: portKey)
             notifyEndpointChanged()
+        Whether to use HTTPS instead of HTTP
+    public var useHTTPS: Bool {
+        get { userDefaults.object(forKey: useHTTPSKey) as? Bool ?? Self.defaultUseHTTPS }
+        set {
+            userDefaults.set(newValue, forKey: useHTTPSKey)
+            notifyEndpointChanged()
         }
     }
     
+    /// The URL scheme (http or https)
+    public var scheme: String {
+        useHTTPS ? "https" : "http"
+    }
+    
     /// The full base URL for the endpoint
+    public var baseURL: URL? {
+        guard isEnabled else { return nil }
+        return URL(string: "\(scheme)e endpoint
     public var baseURL: URL? {
         guard isEnabled else { return nil }
         return URL(string: "http://\(host):\(port)")
@@ -73,10 +91,13 @@ public class EndpointManager {
     
     /// String representation of the current endpoint
     public var endpointString: String {
-        "\(host):\(port)"
-    }
-    
-    // MARK: - Callbacks
+        "\(host):\(port)", useHTTPS: Bool? = nil) {
+        self.host = host
+        self.port = port
+        if let useHTTPS = useHTTPS {
+            self.useHTTPS = useHTTPS
+        }
+        Logger.shared.info("EndpointManager", "Endpoint set to \(scheme)://
     
     /// Callback when endpoint configuration changes
     public var onEndpointChanged: (() -> Void)?
@@ -97,7 +118,8 @@ public class EndpointManager {
     }
     
     /// Set the endpoint from a URL string (e.g., "192.168.1.100:8080")
-    public func setEndpoint(from string: String) {
+    publuserDefaults.removeObject(forKey: useHTTPSKey)
+        ic func setEndpoint(from string: String) {
         let components = string.split(separator: ":")
         if components.count == 2,
            let portValue = Int(components[1]) {

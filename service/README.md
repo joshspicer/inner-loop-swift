@@ -1,14 +1,15 @@
 # InnerLoop Service
 
-A dockerized backend service for processing iOS app logs and errors with LLM-powered analysis.
+A dockerized backend service for processing iOS app logs and errors with a plugin-based architecture.
 
 ## Features
 
 - **Batch Log Processing**: Receives and stores batched logs from iOS apps
 - **Error Tracking**: Captures and stores error reports with full context
-- **LLM Integration**: Automatic analysis of errors and logs using OpenAI or Anthropic
 - **Plugin System**: Extensible architecture with TypeScript-based plugins and lifecycle hooks
 - **GitHub Integration**: Automatically create GitHub issues for errors and user reports
+- **Admin UI**: Web-based admin interface for managing clients, viewing logs, and configuring plugins
+- **Client Authentication**: Secure client registration with shared secrets
 - **SQLite Database**: Persistent storage of all logs and errors
 - **RESTful API**: Easy-to-use endpoints for querying and managing data
 - **Docker Support**: Easy deployment with Docker and Docker Compose
@@ -24,19 +25,17 @@ A dockerized backend service for processing iOS app logs and errors with LLM-pow
 cp .env.example .env
 ```
 
-2. **Edit `.env` and add your API keys** (optional, for LLM features):
+2. **Edit `.env`** and configure as needed:
 ```bash
-# Enable LLM analysis (optional)
-ENABLE_LLM=true
-AUTO_ANALYZE_ERRORS=true
+# Server Configuration
+PORT=7990
+DATABASE_PATH=./data/innerloop.db
+ADMIN_PASSWORD=your-secure-password
 
-# Choose provider: openai or anthropic
-LLM_PROVIDER=openai
-
-# Add your API key
-OPENAI_API_KEY=sk-your-key-here
-# OR
-ANTHROPIC_API_KEY=sk-ant-your-key-here
+# Optional: GitHub Plugin (can also configure via Admin UI)
+PLUGIN_GITHUB_TOKEN=ghp_your_token_here
+PLUGIN_GITHUB_OWNER=your-github-username
+PLUGIN_GITHUB_REPO=your-repo-name
 ```
 
 3. **Start the service**:
@@ -44,40 +43,21 @@ ANTHROPIC_API_KEY=sk-ant-your-key-here
 docker-compose up -d
 ```
 
-The service will be available at `http://localhost:3000`
+The service will be available at `http://localhost:7990`
+Admin UI will be at `http://localhost:7990/admin`
 
-### Using Pre-built Docker Image (Recommended)
+### Using Pre-built Docker Image
 
 Pre-built Docker images are automatically published to GitHub Container Registry on every push to main.
 
 ```bash
 # Pull and run the latest image
 docker run -d \
-  -p 3000:3000 \
+  -p 7990:7990 \
   -v innerloop-data:/app/data \
+  -e ADMIN_PASSWORD=your-password \
   --name innerloop-service \
   ghcr.io/joshspicer/innerloop:latest
-
-# Or use a specific commit SHA
-docker run -d \
-  -p 3000:3000 \
-  -v innerloop-data:/app/data \
-  --name innerloop-service \
-  ghcr.io/joshspicer/innerloop:main-abc1234
-```
-
-### Using Docker (Build Locally)
-
-```bash
-# Build the image
-docker build -t innerloop-service .
-
-# Run the container
-docker run -d \
-  -p 3000:3000 \
-  -v innerloop-data:/app/data \
-  --name innerloop-service \
-  innerloop-service
 ```
 
 ### Local Development
@@ -97,6 +77,34 @@ npm start
 npm run dev
 ```
 
+## Admin UI
+
+The Admin UI provides a web-based interface for managing InnerLoop:
+
+### Accessing Admin UI
+
+1. Navigate to `http://localhost:7990/admin`
+2. Login with your admin password (default: `admin`)
+
+### Features
+
+#### Clients Tab
+- View all registered clients
+- Add new client applications
+- Edit client settings (name, secret, enabled status)
+- Delete clients
+
+#### Logs Tab
+- View all errors with filtering by app
+- View all log batches with user messages
+- Detailed view of individual errors and batches
+- Filter by environment (development, staging, production)
+
+#### Plugins Tab
+- Configure and enable/disable plugins
+- Built-in GitHub plugin configuration
+- View plugin documentation
+
 ## API Endpoints
 
 ### Health Check
@@ -105,9 +113,15 @@ GET /health
 ```
 Returns service health status.
 
+### Client Authentication
+
+All API endpoints (except health and admin) require client authentication using `X-App-Id` and `X-Shared-Secret` headers.
+
 ### Submit Error
 ```bash
 POST /api/errors
+X-App-Id: com.example.myapp
+X-Shared-Secret: your-shared-secret
 Content-Type: application/json
 
 {
@@ -126,6 +140,8 @@ Content-Type: application/json
 ### Submit Log Batch
 ```bash
 POST /api/batch
+X-App-Id: com.example.myapp
+X-Shared-Secret: your-shared-secret
 Content-Type: application/json
 
 {
@@ -143,7 +159,8 @@ Content-Type: application/json
       "timestamp": "2026-01-12T18:59:58Z",
       "file": "ViewController.swift",
       "function": "saveButtonTapped",
-      "line": 42
+      "line": 42,
+      "category": "UI"
     },
     {
       "message": "Validation failed",
@@ -151,7 +168,8 @@ Content-Type: application/json
       "timestamp": "2026-01-12T18:59:59Z",
       "file": "DataValidator.swift",
       "function": "validate",
-      "line": 15
+      "line": 15,
+      "category": "Validation"
     }
   ]
 }
@@ -175,82 +193,69 @@ GET /api/batches/:id
 ```
 Returns a specific batch with all its logs.
 
-### Trigger LLM Analysis
-```bash
-POST /api/batches/:id/analyze
-```
-Triggers LLM analysis for a specific batch.
-
 ## Configuration
 
 ### Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `3000` | Server port |
+| `PORT` | `7990` | Server port |
 | `DATABASE_PATH` | `./data/innerloop.db` | SQLite database path |
-| `ENABLE_LLM` | `false` | Enable LLM analysis |
-| `AUTO_ANALYZE_ERRORS` | `false` | Automatically analyze errors with LLM |
-| `LLM_PROVIDER` | `openai` | LLM provider (`openai` or `anthropic`) |
-| `OPENAI_API_KEY` | - | OpenAI API key |
-| `OPENAI_MODEL` | `gpt-4` | OpenAI model to use |
-| `ANTHROPIC_API_KEY` | - | Anthropic API key |
-| `ANTHROPIC_MODEL` | `claude-3-5-sonnet-20241022` | Anthropic model to use |
-| `GITHUB_TOKEN` | - | GitHub personal access token |
-| `GITHUB_OWNER` | - | GitHub repository owner |
-| `GITHUB_REPO` | - | GitHub repository name |
-| `GITHUB_ASSIGNEES` | - | Comma-separated list of GitHub usernames to assign |
-| `GITHUB_LABELS` | - | Comma-separated list of labels to add to issues |
-| `GITHUB_CREATE_ISSUE_ON_ERROR` | `false` | Create issue for every error |
-| `GITHUB_CREATE_ISSUE_ON_BATCH` | `false` | Create issue for user reports |
+| `ADMIN_PASSWORD` | `admin` | Admin UI password |
+| `PLUGIN_GITHUB_TOKEN` | - | GitHub personal access token |
+| `PLUGIN_GITHUB_OWNER` | - | GitHub repository owner |
+| `PLUGIN_GITHUB_REPO` | - | GitHub repository name |
+| `PLUGIN_GITHUB_ASSIGNEES` | - | Comma-separated list of GitHub usernames |
+| `PLUGIN_GITHUB_LABELS` | - | Comma-separated list of labels |
+| `PLUGIN_GITHUB_CREATE_ISSUE_ON_ERROR` | `false` | Create issue for every error |
+| `PLUGIN_GITHUB_CREATE_ISSUE_ON_BATCH` | `true` | Create issue for user reports |
 
 ## Plugin System
 
-The service includes a powerful plugin system for extending functionality. Plugins are written in TypeScript and can hook into various lifecycle events.
+The service includes a powerful plugin system for extending functionality. Plugins can hook into error and batch lifecycle events.
 
 ### Available Hooks
 
 - `onInit` - Plugin initialization
 - `onErrorReceived` - When error is received
 - `onErrorStored` - After error is saved to database
-- `onErrorAnalyzed` - After LLM analysis of error
 - `onBatchReceived` - When log batch is received
 - `onBatchStored` - After batch is saved to database
-- `onBatchAnalyzed` - After LLM analysis of batch
 - `onError` - When any hook throws an error
 
 ### GitHub Plugin
 
 The built-in GitHub plugin automatically creates issues for errors and user reports.
 
-#### Configuration
+#### Configuration via Admin UI (Recommended)
+
+1. Go to Admin → Plugins → Configure Plugin
+2. Select "GitHub Plugin"
+3. Enter your GitHub Personal Access Token
+4. Enter repository owner and name
+5. Configure labels, assignees, and when to create issues
+
+#### Configuration via Environment Variables
 
 ```bash
-# Enable GitHub integration
-GITHUB_TOKEN=ghp_your_personal_access_token
-GITHUB_OWNER=your-username
-GITHUB_REPO=your-repo
-GITHUB_ASSIGNEES=username1,username2
-GITHUB_LABELS=bug,innerloop
-GITHUB_CREATE_ISSUE_ON_ERROR=false
-GITHUB_CREATE_ISSUE_ON_BATCH=true
+PLUGIN_GITHUB_TOKEN=ghp_your_personal_access_token
+PLUGIN_GITHUB_OWNER=your-username
+PLUGIN_GITHUB_REPO=your-repo
+PLUGIN_GITHUB_ASSIGNEES=username1,username2
+PLUGIN_GITHUB_LABELS=bug,innerloop
+PLUGIN_GITHUB_CREATE_ISSUE_ON_ERROR=false
+PLUGIN_GITHUB_CREATE_ISSUE_ON_BATCH=true
 ```
-
-#### Features
-
-- Automatically creates GitHub issues with full context
-- Includes stack traces, logs, metadata, and AI analysis
-- Assigns specified users and adds labels
-- Rich formatting with code blocks and structured data
 
 #### Example Issue
 
 When a user reports an issue via shake-to-send, the plugin creates:
 
-```
+```markdown
 Title: [InnerLoop User Report] App crashed when tapping save button
 
 ## User Report
+**App ID:** com.example.myapp
 **Environment:** production
 **App Version:** 1.2.3
 
@@ -261,11 +266,15 @@ Title: [InnerLoop User Report] App crashed when tapping save button
 1. [2026-01-12T19:59:58Z] Validation failed: email is required
    - Location: DataValidator.swift:15 in validate
 
-### AI Analysis
-[Full analysis with root cause and fix suggestions]
+### Warning Logs
+1. [2026-01-12T19:59:50Z] Memory usage above 80%
+
+### Recent Activity
+1. [2026-01-12T19:59:45Z] User navigated to settings
+2. [2026-01-12T19:59:55Z] User tapped save button
 ```
 
-For complete plugin documentation and development guide, see [PLUGINS.md](PLUGINS.md).
+For complete plugin documentation, see [PLUGINS.md](PLUGINS.md).
 
 ## iOS Library Configuration
 
@@ -274,46 +283,36 @@ Configure your iOS app to send logs to this service:
 ```swift
 import InnerLoop
 
+// Configure endpoint (can be done dynamically)
 let config = InnerLoopConfiguration(
-    errorReportingURI: "http://your-server.com:3000/api/errors",
+    errorReportingURI: "http://your-server.com:7990/api/errors",
+    batchReportingURI: "http://your-server.com:7990/api/batch",
+    appId: "com.example.myapp",
+    sharedSecret: "your-client-secret",
     enableShakeGesture: true,
     environment: "production",
     appVersion: "1.0.0",
-    maxBufferSize: 1000,      // Buffer up to 1000 logs
-    batchInterval: 300         // Send every 5 minutes
+    maxBufferSize: 1000,
+    batchInterval: 300
 )
 
 InnerLoop.shared.initialize(with: config)
 ```
 
-## LLM Analysis
-
-When enabled, the service automatically analyzes:
-
-1. **Errors**: Provides root cause analysis, fix suggestions, and prevention strategies
-2. **Log Batches with User Messages**: Analyzes the full context when users report issues
-
-### Example Analysis Output
-
-For an error, the LLM provides:
-- Root cause analysis
-- Immediate fix suggestions
-- Prevention strategies
-- Additional context needed
-
-For a log batch with user message:
-- Issue identification
-- Root cause
-- Step-by-step fix
-- Testing recommendations
-- Related issues found in logs
-
 ## Database Schema
 
 ### Tables
 
+**clients**
+- `app_id`: Primary key, client identifier
+- `app_name`: Display name
+- `shared_secret`: Authentication secret
+- `enabled`: Whether client is active
+- `created_at`, `updated_at`: Timestamps
+
 **errors**
 - `id`: Auto-incrementing primary key
+- `app_id`: Foreign key to clients
 - `message`: Error message
 - `stack_trace`: Stack trace
 - `timestamp`: When error occurred
@@ -324,14 +323,13 @@ For a log batch with user message:
 
 **log_batches**
 - `id`: Auto-incrementing primary key
+- `app_id`: Foreign key to clients
 - `user_message`: User's description of the issue
 - `timestamp`: When batch was created
 - `environment`: App environment
 - `app_version`: App version
 - `metadata`: JSON metadata
 - `log_count`: Number of logs in batch
-- `analyzed`: Whether LLM analysis was performed
-- `analysis`: LLM analysis results
 - `created_at`: When stored
 
 **batch_logs**
@@ -341,16 +339,24 @@ For a log batch with user message:
 - `level`: Log level (DEBUG, INFO, WARNING, ERROR)
 - `timestamp`: When log was created
 - `file`: Source file
-- `function`: Function name
+- `function_name`: Function name
 - `line`: Line number
+- `category`: Log category
+
+**plugin_configs**
+- `id`: Auto-incrementing primary key
+- `name`: Plugin identifier
+- `config`: JSON configuration
+- `enabled`: Whether plugin is active
+- `created_at`, `updated_at`: Timestamps
 
 ## Production Deployment
 
 ### Security Considerations
 
 1. **Use HTTPS**: Deploy behind a reverse proxy with SSL/TLS
-2. **Authentication**: Add API key authentication for production
-3. **Rate Limiting**: Implement rate limiting to prevent abuse
+2. **Strong Passwords**: Use secure admin and client secrets
+3. **Rate Limiting**: Consider implementing rate limiting
 4. **Network Security**: Restrict access to trusted networks/IPs
 5. **Secrets Management**: Use secure secret storage (AWS Secrets Manager, etc.)
 
@@ -359,7 +365,7 @@ For a log batch with user message:
 ```
 [iOS Apps] → [Load Balancer] → [InnerLoop Service] → [Database]
                                         ↓
-                                   [LLM API]
+                                   [GitHub API]
 ```
 
 ### Example nginx Configuration
@@ -373,7 +379,7 @@ server {
     ssl_certificate_key /path/to/key.pem;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:7990;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -389,7 +395,7 @@ server {
 The service includes a health check endpoint at `/health`:
 
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:7990/health
 ```
 
 Response:
@@ -441,9 +447,9 @@ docker run --rm -v innerloop-data:/data -v $(pwd):/backup alpine \
 
 ### Service won't start
 
-1. Check if port 3000 is available:
+1. Check if port 7990 is available:
 ```bash
-lsof -i :3000
+lsof -i :7990
 ```
 
 2. Check Docker logs:
@@ -451,18 +457,16 @@ lsof -i :3000
 docker-compose logs innerloop-service
 ```
 
-### LLM Analysis not working
+### Client authentication failing
 
-1. Verify API key is set:
-```bash
-docker-compose exec innerloop-service env | grep API_KEY
-```
+1. Verify client is registered via Admin UI
+2. Check `X-App-Id` and `X-Shared-Secret` headers match exactly
+3. Ensure client is enabled in Admin UI
 
-2. Check LLM is enabled:
-```bash
-docker-compose exec innerloop-service env | grep ENABLE_LLM
-```
+### GitHub issues not being created
 
+1. Verify GitHub plugin is configured via Admin UI → Plugins
+2. Check GitHub token has `repo` scope
 3. Check service logs for errors:
 ```bash
 docker-compose logs -f innerloop-service
@@ -487,10 +491,7 @@ docker-compose up -d
 ### Running Tests
 
 ```bash
-# Install dev dependencies
 npm install
-
-# Run tests (when available)
 npm test
 ```
 
@@ -498,13 +499,22 @@ npm test
 
 ```
 service/
-├── server.js           # Main server application
-├── llm-provider.js     # LLM integration module
-├── package.json        # Node.js dependencies
-├── Dockerfile          # Docker image definition
-├── docker-compose.yml  # Docker Compose configuration
-├── .env.example        # Example environment variables
-└── README.md          # This file
+├── src/
+│   ├── server.ts           # Main Express server
+│   ├── plugin-system.ts    # Plugin architecture
+│   ├── auth.ts             # Client authentication
+│   └── plugins/
+│       └── github-plugin.ts  # GitHub integration
+├── public/
+│   ├── index.html          # Admin UI HTML
+│   ├── app.js              # Admin UI JavaScript
+│   └── style.css           # Admin UI Styles
+├── package.json            # Dependencies
+├── Dockerfile              # Docker image
+├── docker-compose.yml      # Docker Compose config
+├── .env.example            # Example environment
+├── PLUGINS.md              # Plugin documentation
+└── README.md               # This file
 ```
 
 ## License

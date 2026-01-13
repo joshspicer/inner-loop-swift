@@ -1,4 +1,4 @@
-import { Plugin, PluginContext, HookContext } from '../plugin-system';
+import { Plugin, PluginContext, HookContext, HooksConfig } from '../plugin-system';
 import { Octokit } from '@octokit/rest';
 
 export interface GitHubPluginConfig {
@@ -7,8 +7,8 @@ export interface GitHubPluginConfig {
   repo: string;
   assignees?: string[];
   labels?: string[];
-  createIssueOnError?: boolean;
-  createIssueOnBatch?: boolean;
+  requireUserMessage?: boolean; // Only create batch issues for user reports
+  hooks?: HooksConfig; // Which hooks are enabled
 }
 
 export class GitHubPlugin extends Plugin {
@@ -33,17 +33,18 @@ export class GitHubPlugin extends Plugin {
     console.log(`GitHub plugin initialized for ${this.githubConfig.owner}/${this.githubConfig.repo}`);
   }
 
-  async onErrorAnalyzed(context: PluginContext, hookContext: HookContext): Promise<void> {
-    if (!this.githubConfig.createIssueOnError || !this.octokit) {
+  async onErrorStored(context: PluginContext, hookContext: HookContext): Promise<void> {
+    if (!this.octokit) {
+      console.warn('GitHub plugin: Octokit not initialized, skipping');
       return;
     }
 
-    const { errorData, errorId, analysis } = hookContext;
+    const { errorData, errorId } = hookContext;
     if (!errorData) return;
 
     try {
       const title = `[InnerLoop Error] ${errorData.message.substring(0, 100)}`;
-      const body = this.formatErrorIssue(errorData, errorId, analysis);
+      const body = this.formatErrorIssue(errorData, errorId);
 
       const issue = await this.octokit.issues.create({
         owner: this.githubConfig.owner,
@@ -60,20 +61,25 @@ export class GitHubPlugin extends Plugin {
     }
   }
 
-  async onBatchAnalyzed(context: PluginContext, hookContext: HookContext): Promise<void> {
-    if (!this.githubConfig.createIssueOnBatch || !this.octokit) {
+  async onBatchStored(context: PluginContext, hookContext: HookContext): Promise<void> {
+    if (!this.octokit) {
+      console.warn('GitHub plugin: Octokit not initialized, skipping');
       return;
     }
 
-    const { batchData, batchId, analysis } = hookContext;
-    if (!batchData || !batchData.userMessage) {
-      // Only create issues for batches with user messages
+    const { batchData, batchId } = hookContext;
+    if (!batchData) return;
+
+    // If requireUserMessage is true (default), only create issues for batches with user messages
+    if (this.githubConfig.requireUserMessage !== false && !batchData.userMessage) {
+      console.log('GitHub plugin: Skipping batch without user message (requireUserMessage=true)');
       return;
     }
 
     try {
-      const title = `[InnerLoop User Report] ${batchData.userMessage.substring(0, 100)}`;
-      const body = this.formatBatchIssue(batchData, batchId, analysis);
+      const messagePreview = batchData.userMessage?.substring(0, 100) || 'Log batch submitted';
+      const title = `[InnerLoop User Report] ${messagePreview}`;
+      const body = this.formatBatchIssue(batchData, batchId);
 
       const issue = await this.octokit.issues.create({
         owner: this.githubConfig.owner,
@@ -90,10 +96,11 @@ export class GitHubPlugin extends Plugin {
     }
   }
 
-  private formatErrorIssue(errorData: any, errorId?: number, analysis?: string): string {
+  private formatErrorIssue(errorData: any, errorId?: number): string {
     let body = '## Error Report\n\n';
 
     body += `**Error ID:** ${errorId || 'N/A'}\n`;
+    body += `**App ID:** ${errorData.appId}\n`;
     body += `**Environment:** ${errorData.environment}\n`;
     body += `**App Version:** ${errorData.appVersion || 'Unknown'}\n`;
     body += `**Timestamp:** ${errorData.timestamp}\n\n`;
@@ -117,22 +124,17 @@ export class GitHubPlugin extends Plugin {
       body += '\n```\n\n';
     }
 
-    if (analysis) {
-      body += '### AI Analysis\n\n';
-      body += analysis;
-      body += '\n\n';
-    }
-
     body += '---\n';
-    body += '*This issue was automatically created by InnerLoop*\n';
+    body += '*This issue was automatically created by [InnerLoop](https://github.com/joshspicer/inner-loop-swift)*\n';
 
     return body;
   }
 
-  private formatBatchIssue(batchData: any, batchId?: number, analysis?: string): string {
+  private formatBatchIssue(batchData: any, batchId?: number): string {
     let body = '## User Report\n\n';
 
     body += `**Batch ID:** ${batchId || 'N/A'}\n`;
+    body += `**App ID:** ${batchData.appId}\n`;
     body += `**Environment:** ${batchData.environment}\n`;
     body += `**App Version:** ${batchData.appVersion || 'Unknown'}\n`;
     body += `**Timestamp:** ${batchData.timestamp}\n`;
@@ -147,12 +149,16 @@ export class GitHubPlugin extends Plugin {
     const errorLogs = (batchData.logs || []).filter((log: any) => log.level === 'ERROR');
     if (errorLogs.length > 0) {
       body += '### Error Logs\n\n';
-      errorLogs.slice(0, 5).forEach((log: any, idx: number) => {
+      errorLogs.slice(0, 10).forEach((log: any, idx: number) => {
         body += `${idx + 1}. **[${log.timestamp}]** ${log.message}\n`;
-        body += `   - Location: \`${log.file}:${log.line}\` in \`${log.function}\`\n`;
+        if (log.file && log.line) {
+          body += `   - Location: \`${log.file}:${log.line}\``;
+          if (log.function) body += ` in \`${log.function}\``;
+          body += '\n';
+        }
       });
-      if (errorLogs.length > 5) {
-        body += `\n*...and ${errorLogs.length - 5} more error logs*\n`;
+      if (errorLogs.length > 10) {
+        body += `\n*...and ${errorLogs.length - 10} more error logs*\n`;
       }
       body += '\n';
     }
@@ -161,12 +167,22 @@ export class GitHubPlugin extends Plugin {
     const warningLogs = (batchData.logs || []).filter((log: any) => log.level === 'WARNING');
     if (warningLogs.length > 0) {
       body += '### Warning Logs\n\n';
-      warningLogs.slice(0, 3).forEach((log: any, idx: number) => {
+      warningLogs.slice(0, 5).forEach((log: any, idx: number) => {
         body += `${idx + 1}. **[${log.timestamp}]** ${log.message}\n`;
       });
-      if (warningLogs.length > 3) {
-        body += `\n*...and ${warningLogs.length - 3} more warnings*\n`;
+      if (warningLogs.length > 5) {
+        body += `\n*...and ${warningLogs.length - 5} more warnings*\n`;
       }
+      body += '\n';
+    }
+
+    // Show recent info logs for context
+    const infoLogs = (batchData.logs || []).filter((log: any) => log.level === 'INFO').slice(-10);
+    if (infoLogs.length > 0) {
+      body += '### Recent Activity (Info Logs)\n\n';
+      infoLogs.forEach((log: any, idx: number) => {
+        body += `${idx + 1}. [${log.timestamp}] ${log.message}\n`;
+      });
       body += '\n';
     }
 
@@ -177,14 +193,8 @@ export class GitHubPlugin extends Plugin {
       body += '\n```\n\n';
     }
 
-    if (analysis) {
-      body += '### AI Analysis\n\n';
-      body += analysis;
-      body += '\n\n';
-    }
-
     body += '---\n';
-    body += '*This issue was automatically created by InnerLoop from a user report*\n';
+    body += '*This issue was automatically created by [InnerLoop](https://github.com/joshspicer/inner-loop-swift) from a user report*\n';
 
     return body;
   }

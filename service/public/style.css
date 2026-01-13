@@ -6,8 +6,10 @@
     --danger-color: #dc3545;
     --danger-hover: #c82333;
     --success-color: #28a745;
+    --warning-color: #ffc107;
     --border-color: #dee2e6;
     --bg-light: #f8f9fa;
+    --bg-dark: #343a40;
     --text-dark: #212529;
     --text-muted: #6c757d;
 }
@@ -26,7 +28,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -59,7 +61,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     padding: 20px;
     background: white;
     border-radius: 8px;
@@ -71,26 +73,129 @@ header h1 {
     margin: 0;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.stats-summary {
+    color: var(--text-muted);
+    font-size: 0.9em;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 0;
+    background: white;
+    padding: 10px 10px 0 10px;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    border: none;
+    background: var(--bg-light);
+    color: var(--text-muted);
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    background: #e9ecef;
+    color: var(--text-dark);
+}
+
+.tab-btn.active {
+    background: white;
+    color: var(--primary-color);
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Sub-tabs */
+.sub-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.sub-tab-btn {
+    padding: 8px 16px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.95em;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.sub-tab-btn:hover {
+    background: var(--bg-light);
+    color: var(--text-dark);
+}
+
+.sub-tab-btn.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.sub-tab-content {
+    display: none;
+}
+
+.sub-tab-content.active {
+    display: block;
+}
+
 /* Main Content */
 main {
     background: white;
     padding: 30px;
-    border-radius: 8px;
+    border-radius: 0 0 8px 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.actions {
+.section-header {
     display: flex;
-    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
 }
 
+.section-header h2 {
+    margin: 0;
+}
+
+.section-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
 /* Clients List */
-.clients-list {
+.clients-list, .plugins-list {
     margin-top: 20px;
 }
 
-.client-card {
+.client-card, .plugin-card {
     background: var(--bg-light);
     border: 1px solid var(--border-color);
     border-radius: 6px;
@@ -99,29 +204,29 @@ main {
     transition: box-shadow 0.2s;
 }
 
-.client-card:hover {
+.client-card:hover, .plugin-card:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.client-header {
+.client-header, .plugin-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 15px;
 }
 
-.client-info h3 {
+.client-info h3, .plugin-info h3 {
     margin: 0 0 5px 0;
     color: var(--text-dark);
 }
 
-.client-info .app-id {
+.client-info .app-id, .plugin-target {
     color: var(--text-muted);
     font-size: 0.9em;
-    font-family: 'Courier New', monospace;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 
-.client-status {
+.client-status, .plugin-status {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -144,23 +249,24 @@ main {
     color: #721c24;
 }
 
-.client-details {
+.client-details, .plugin-details {
     margin-bottom: 15px;
 }
 
 .detail-row {
     display: flex;
     margin-bottom: 8px;
+    align-items: center;
 }
 
 .detail-label {
     font-weight: 500;
-    min-width: 120px;
+    min-width: 140px;
     color: var(--text-muted);
 }
 
 .detail-value {
-    font-family: 'Courier New', monospace;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     font-size: 0.9em;
 }
 
@@ -174,9 +280,324 @@ main {
     letter-spacing: 2px;
 }
 
-.client-actions {
+.client-actions, .plugin-actions {
     display: flex;
     gap: 10px;
+}
+
+/* Logs Table */
+.logs-table-container {
+    overflow-x: auto;
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.logs-table th, .logs-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logs-table th {
+    background: var(--bg-light);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+.logs-table tbody tr:hover {
+    background: #f1f3f4;
+}
+
+.timestamp {
+    white-space: nowrap;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.85em;
+    color: var(--text-muted);
+}
+
+.message-cell {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.env-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.env-badge.development {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.env-badge.staging {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.env-badge.production {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Log Detail */
+.log-detail-content {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.detail-section {
+    margin-bottom: 25px;
+}
+
+.detail-section h4 {
+    margin-bottom: 10px;
+    color: var(--text-dark);
+    font-size: 1em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.code-block {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 15px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.85em;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.stack-trace {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.user-message-section blockquote {
+    background: #e7f3ff;
+    border-left: 4px solid var(--primary-color);
+    padding: 15px 20px;
+    margin: 0;
+    border-radius: 0 6px 6px 0;
+    font-style: italic;
+}
+
+/* Log entries in batch detail */
+.logs-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+.log-entry {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-entry.log-error {
+    background: #fff5f5;
+    border-left: 3px solid var(--danger-color);
+}
+
+.log-entry.log-warning {
+    background: #fffbeb;
+    border-left: 3px solid var(--warning-color);
+}
+
+.log-entry.log-info {
+    border-left: 3px solid var(--primary-color);
+}
+
+.log-entry.log-debug {
+    border-left: 3px solid var(--secondary-color);
+    color: var(--text-muted);
+}
+
+.log-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.log-level {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.log-level.error {
+    background: var(--danger-color);
+    color: white;
+}
+
+.log-level.warning {
+    background: var(--warning-color);
+    color: #856404;
+}
+
+.log-level.info {
+    background: var(--primary-color);
+    color: white;
+}
+
+.log-level.debug {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.log-category {
+    background: var(--bg-light);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    color: var(--text-muted);
+}
+
+.log-timestamp {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.log-message {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.9em;
+    word-break: break-word;
+}
+
+.log-location {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    margin-top: 5px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+/* Plugin docs */
+.plugin-docs {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.plugin-docs h3 {
+    margin-bottom: 20px;
+    color: var(--text-muted);
+}
+
+.plugin-doc-card {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+
+.plugin-doc-card h4 {
+    margin: 0 0 10px 0;
+    color: var(--text-dark);
+}
+
+.plugin-doc-card p {
+    margin-bottom: 10px;
+    color: var(--text-muted);
+}
+
+.plugin-doc-card ul {
+    padding-left: 20px;
+    margin-bottom: 10px;
+}
+
+.plugin-doc-card li {
+    margin-bottom: 5px;
+}
+
+.plugin-doc-card code {
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.9em;
+}
+
+.label-tag {
+    display: inline-block;
+    background: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.85em;
+    margin-right: 5px;
+}
+
+/* Plugin config section */
+.plugin-config-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--bg-light);
+    border-radius: 6px;
+}
+
+.plugin-config-section h3 {
+    margin-bottom: 15px;
+    color: var(--text-dark);
+}
+
+.plugin-config-section .form-help {
+    color: var(--text-muted);
+    font-size: 0.9em;
+    margin-bottom: 15px;
+}
+
+.hooks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 8px;
+}
+
+.hooks-grid .checkbox-group {
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.hooks-grid .checkbox-group:hover {
+    border-color: var(--primary-blue);
+}
+
+.hooks-grid .checkbox-group label {
+    margin-bottom: 0;
+    font-weight: normal;
+    font-size: 0.9em;
 }
 
 /* Forms */
@@ -192,15 +613,20 @@ main {
 }
 
 .form-group input[type="text"],
-.form-group input[type="password"] {
+.form-group input[type="password"],
+.form-group select,
+.form-group textarea {
     width: 100%;
     padding: 10px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 1em;
+    font-family: inherit;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
     border-color: var(--primary-color);
 }
@@ -320,6 +746,10 @@ main {
     max-width: 400px;
 }
 
+.modal-large {
+    max-width: 800px;
+}
+
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -393,21 +823,52 @@ main {
         gap: 15px;
     }
 
-    .actions {
-        flex-direction: column;
-    }
-
-    .client-header {
+    .header-right {
         flex-direction: column;
         gap: 10px;
     }
 
-    .client-actions {
+    .tabs {
+        overflow-x: auto;
+        padding: 10px 5px 0 5px;
+    }
+
+    .tab-btn {
+        padding: 10px 15px;
+        font-size: 0.9em;
+        white-space: nowrap;
+    }
+
+    .section-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+
+    .section-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .client-header, .plugin-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .client-actions, .plugin-actions {
         flex-direction: column;
     }
 
     .modal-content {
         width: 95%;
         padding: 20px;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .logs-table th, .logs-table td {
+        padding: 8px 10px;
     }
 }

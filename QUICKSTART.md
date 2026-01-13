@@ -20,7 +20,7 @@ cp .env.example .env
 docker-compose up -d
 
 # Check it's running
-curl http://localhost:3000/health
+curl http://localhost:7990/health
 ```
 
 ### Option B: Without Docker
@@ -32,7 +32,7 @@ npm install
 npm start
 ```
 
-The service will be available at `http://localhost:3000`.
+The service will be available at `http://localhost:7990`.
 
 ## Step 2: Configure Your iOS App
 
@@ -55,7 +55,7 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 
     // Configure InnerLoop
     let config = InnerLoopConfiguration(
-        errorReportingURI: "http://localhost:3000/api/errors",  // Use your server URL
+        errorReportingURI: "http://localhost:7990/api/errors",  // Use your server URL
         enableShakeGesture: true,
         environment: "development",
         appVersion: appVersion,
@@ -115,13 +115,13 @@ class ViewController: UIViewController {
 
 ```bash
 # View all errors
-curl http://localhost:3000/api/errors | jq .
+curl http://localhost:7990/api/errors | jq .
 
 # View all log batches
-curl http://localhost:3000/api/batches | jq .
+curl http://localhost:7990/api/batches | jq .
 
 # View a specific batch with all logs
-curl http://localhost:3000/api/batches/1 | jq .
+curl http://localhost:7990/api/batches/1 | jq .
 ```
 
 ### Check service logs:
@@ -162,7 +162,7 @@ Now when errors occur or users send logs with messages, the service will automat
 
 View the analysis:
 ```bash
-curl http://localhost:3000/api/batches/1 | jq '.analysis'
+curl http://localhost:7990/api/batches/1 | jq '.analysis'
 ```
 
 ## Production Deployment
@@ -184,25 +184,25 @@ For production use:
 
 On device: Use your computer's IP address instead of localhost:
 ```swift
-errorReportingURI: "http://192.168.1.100:3000/api/errors"
+errorReportingURI: "http://192.168.1.100:7990/api/errors"
 ```
 
 On simulator: `localhost` should work, but you may need to use `127.0.0.1`
 
 ### Service not starting
 
-Check if port 3000 is in use:
+Check if port 7990 is in use:
 ```bash
-lsof -i :3000
+lsof -i :7990
 ```
 
 Use a different port:
 ```bash
 # Edit .env
-PORT=3001
+PORT=8080
 
 # Update iOS config
-errorReportingURI: "http://localhost:3001/api/errors"
+errorReportingURI: "http://localhost:8080/api/errors"
 ```
 
 ### Logs not appearing in service

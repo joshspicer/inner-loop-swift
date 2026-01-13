@@ -44,7 +44,7 @@ cp .env.example .env
 docker-compose up -d
 ```
 
-The service will be available at `http://localhost:3000`. See [service/README.md](service/README.md) for full documentation.
+The service will be available at `http://localhost:7990`. See [service/README.md](service/README.md) for full documentation.
 
 ### iOS Library Setup
 
@@ -56,7 +56,7 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 
     // Configure InnerLoop
     let config = InnerLoopConfiguration(
-        errorReportingURI: "http://localhost:3000/api/errors",
+        errorReportingURI: "http://localhost:7990/api/errors",
         enableShakeGesture: true,
         environment: "development",
         appVersion: "1.0.0",
@@ -154,7 +154,7 @@ InnerLoop automatically batches all logs (at all levels) to provide rich context
 ```swift
 // Configure batching behavior
 let config = InnerLoopConfiguration(
-    errorReportingURI: "http://your-server.com:3000/api/errors",
+    errorReportingURI: "http://your-server.com:7990/api/errors",
     maxBufferSize: 2000,     // Buffer up to 2000 logs before auto-sending
     batchInterval: 600        // Send every 10 minutes instead of 5
 )

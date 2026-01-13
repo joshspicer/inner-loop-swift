@@ -10,7 +10,7 @@ A simple Express server that receives and logs errors:
 // server.js
 const express = require('express');
 const app = express();
-const PORT = 3000;
+const PORT = 7990;
 
 app.use(express.json());
 
@@ -58,7 +58,7 @@ node server.js
 
 Use ngrok to expose your local server:
 ```bash
-ngrok http 3000
+ngrok http 7990
 ```
 
 Then use the ngrok URL in your InnerLoop configuration:
@@ -103,7 +103,7 @@ def receive_log():
     return jsonify({'status': 'received'})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=3000)
+    app.run(debug=True, port=7990)
 ```
 
 ### Setup and Run
@@ -122,7 +122,7 @@ Here's an example of forwarding errors to an LLM for analysis:
 const express = require('express');
 const axios = require('axios');
 const app = express();
-const PORT = 3000;
+const PORT = 7990;
 
 app.use(express.json());
 
@@ -212,7 +212,7 @@ Store errors in a database for later analysis:
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const app = express();
-const PORT = 3000;
+const PORT = 7990;
 
 app.use(express.json());
 
@@ -351,13 +351,13 @@ node db-server.js
 
 ```bash
 # View all errors
-curl http://localhost:3000/api/errors
+curl http://localhost:7990/api/errors
 
 # View all logs
-curl http://localhost:3000/api/logs
+curl http://localhost:7990/api/logs
 
 # View only error-level logs
-curl http://localhost:3000/api/logs?level=ERROR
+curl http://localhost:7990/api/logs?level=ERROR
 ```
 
 ## Testing
@@ -366,7 +366,7 @@ You can test these servers with curl:
 
 ```bash
 # Test error endpoint
-curl -X POST http://localhost:3000/api/errors \
+curl -X POST http://localhost:7990/api/errors \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Test error",
@@ -378,7 +378,7 @@ curl -X POST http://localhost:3000/api/errors \
   }'
 
 # Test log endpoint
-curl -X POST http://localhost:3000/api/logs \
+curl -X POST http://localhost:7990/api/logs \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Test log message",
