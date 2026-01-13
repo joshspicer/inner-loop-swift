@@ -61,6 +61,15 @@ public class LogBatcher {
         return size
     }
 
+    /// Get all logs in buffer (for viewing)
+    public func getLogs() -> [LogEntry] {
+        var logs: [LogEntry] = []
+        queue.sync {
+            logs = logBuffer
+        }
+        return logs
+    }
+
     /// Clear the buffer
     public func clearBuffer() {
         queue.async { [weak self] in

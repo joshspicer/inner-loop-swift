@@ -1,52 +1,80 @@
 import UIKit
+import SwiftUI
 
 /// Handles presenting UI alerts and dialogs for the shake gesture detector
 class ShakeGestureUI {
     private let logger = Logger.shared
 
-    /// Show the main debug menu
+    /// Show the main debug menu (full-screen console on iOS 15+, fallback to action sheet)
     func showDebugMenu() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-
-            let alert = UIAlertController(
-                title: "Debug Menu",
-                message: "InnerLoop Debug Options",
-                preferredStyle: .actionSheet
-            )
-
-            alert.addAction(UIAlertAction(title: "Send Logs with Message", style: .default) { _ in
-                self.promptForUserMessage()
-            })
-
-            let bufferSize = LogBatcher.shared.getBufferSize()
-            alert.addAction(UIAlertAction(title: "Send Logs (\(bufferSize) buffered)", style: .default) { _ in
-                self.logger.info("Sending buffered logs")
-                LogBatcher.shared.sendBatch()
-            })
-
-            alert.addAction(UIAlertAction(title: "View Buffer Size", style: .default) { _ in
-                let size = LogBatcher.shared.getBufferSize()
-                self.logger.info("Current buffer size: \(size) logs")
-                self.showBufferInfo(size: size)
-            })
-
-            alert.addAction(UIAlertAction(title: "Test Error Reporting", style: .default) { _ in
-                self.logger.info("Testing error reporting")
-                ErrorHandler.shared.report(message: "Test error from debug menu")
-            })
-
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-
-            if let topController = UIViewControllerHelper.getTopViewController() {
-                // For iPad support
-                if let popoverController = alert.popoverPresentationController {
-                    popoverController.sourceView = topController.view
-                    popoverController.sourceRect = CGRect(x: topController.view.bounds.midX, y: topController.view.bounds.midY, width: 0, height: 0)
-                    popoverController.permittedArrowDirections = []
-                }
-                topController.present(alert, animated: true)
+            
+            // Use full-screen SwiftUI debug console on iOS 15+
+            if #available(iOS 15.0, *) {
+                self.showDebugConsole()
+            } else {
+                self.showLegacyDebugMenu()
             }
+        }
+    }
+    
+    /// Show the beautiful full-screen debug console (iOS 15+)
+    @available(iOS 15.0, *)
+    private func showDebugConsole() {
+        guard let topController = UIViewControllerHelper.getTopViewController() else {
+            logger.warning("DebugConsole", "Could not find top view controller")
+            return
+        }
+        
+        let debugConsole = DebugConsoleHostingController()
+        debugConsole.modalPresentationStyle = .fullScreen
+        debugConsole.modalTransitionStyle = .coverVertical
+        
+        topController.present(debugConsole, animated: true) {
+            self.logger.info("DebugConsole", "Debug console presented")
+        }
+    }
+    
+    /// Legacy action sheet debug menu for older iOS versions
+    private func showLegacyDebugMenu() {
+        let alert = UIAlertController(
+            title: "Debug Menu",
+            message: "InnerLoop Debug Options",
+            preferredStyle: .actionSheet
+        )
+
+        alert.addAction(UIAlertAction(title: "Send Logs with Message", style: .default) { [weak self] _ in
+            self?.promptForUserMessage()
+        })
+
+        let bufferSize = LogBatcher.shared.getBufferSize()
+        alert.addAction(UIAlertAction(title: "Send Logs (\(bufferSize) buffered)", style: .default) { [weak self] _ in
+            self?.logger.info("Sending buffered logs")
+            LogBatcher.shared.sendBatch()
+        })
+
+        alert.addAction(UIAlertAction(title: "View Buffer Size", style: .default) { [weak self] _ in
+            let size = LogBatcher.shared.getBufferSize()
+            self?.logger.info("Current buffer size: \(size) logs")
+            self?.showBufferInfo(size: size)
+        })
+
+        alert.addAction(UIAlertAction(title: "Test Error Reporting", style: .default) { [weak self] _ in
+            self?.logger.info("Testing error reporting")
+            ErrorHandler.shared.report(message: "Test error from debug menu")
+        })
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        if let topController = UIViewControllerHelper.getTopViewController() {
+            // For iPad support
+            if let popoverController = alert.popoverPresentationController {
+                popoverController.sourceView = topController.view
+                popoverController.sourceRect = CGRect(x: topController.view.bounds.midX, y: topController.view.bounds.midY, width: 0, height: 0)
+                popoverController.permittedArrowDirections = []
+            }
+            topController.present(alert, animated: true)
         }
     }
 
