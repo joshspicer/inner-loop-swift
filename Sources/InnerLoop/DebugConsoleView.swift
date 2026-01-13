@@ -10,6 +10,7 @@ public struct DebugConsoleView: View {
     @State private var showingMessageInput = false
     @State private var userMessage = ""
     @State private var showingSendConfirmation = false
+    @State private var showingSettings = false
     
     public init() {}
     
@@ -83,23 +84,31 @@ public struct DebugConsoleView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(action: { viewModel.refreshLogs() }) {
-                            Label("Refresh", systemImage: "arrow.clockwise")
+                    HStack(spacing: 16) {
+                        Button(action: { showingSettings = true }) {
+                            Image(systemName: "gearshape")
                         }
-                        Button(action: { viewModel.clearLogs() }) {
-                            Label("Clear Logs", systemImage: "trash")
+                        Menu {
+                            Button(action: { viewModel.refreshLogs() }) {
+                                Label("Refresh", systemImage: "arrow.clockwise")
+                            }
+                            Button(action: { viewModel.clearLogs() }) {
+                                Label("Clear Logs", systemImage: "trash")
+                            }
+                            Button(action: { viewModel.testErrorReport() }) {
+                                Label("Test Error", systemImage: "exclamationmark.triangle")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
-                        Button(action: { viewModel.testErrorReport() }) {
-                            Label("Test Error", systemImage: "exclamationmark.triangle")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
                     }
                 }
             }
             .sheet(isPresented: $showingMessageInput) {
                 messageInputSheet
+            }
+            .sheet(isPresented: $showingSettings) {
+                EndpointSettingsView()
             }
             .alert("Logs Sent", isPresented: $showingSendConfirmation) {
                 Button("OK", role: .cancel) { }
@@ -113,31 +122,53 @@ public struct DebugConsoleView: View {
     }
     
     private var statsHeader: some View {
-        HStack(spacing: 16) {
-            StatCard(
-                title: "Total",
-                value: "\(viewModel.logs.count)",
-                icon: "doc.text",
-                color: .blue
-            )
-            StatCard(
-                title: "Errors",
-                value: "\(viewModel.errorCount)",
-                icon: "exclamationmark.circle",
-                color: .red
-            )
-            StatCard(
-                title: "Warnings",
-                value: "\(viewModel.warningCount)",
-                icon: "exclamationmark.triangle",
-                color: .orange
-            )
-            StatCard(
-                title: "Buffered",
-                value: "\(viewModel.bufferSize)",
-                icon: "tray",
-                color: .purple
-            )
+        VStack(spacing: 8) {
+            // Connection status bar
+            HStack {
+                Image(systemName: EndpointManager.shared.isEnabled ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
+                    .foregroundColor(EndpointManager.shared.isEnabled ? .green : .gray)
+                Text(EndpointManager.shared.isEnabled ? EndpointManager.shared.endpointString : "Not Connected")
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundColor(EndpointManager.shared.isEnabled ? .primary : .secondary)
+                Spacer()
+                Button(action: { showingSettings = true }) {
+                    Text("Configure")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.blue)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color(.systemBackground))
+            .cornerRadius(8)
+            
+            // Stats cards
+            HStack(spacing: 16) {
+                StatCard(
+                    title: "Total",
+                    value: "\(viewModel.logs.count)",
+                    icon: "doc.text",
+                    color: .blue
+                )
+                StatCard(
+                    title: "Errors",
+                    value: "\(viewModel.errorCount)",
+                    icon: "exclamationmark.circle",
+                    color: .red
+                )
+                StatCard(
+                    title: "Warnings",
+                    value: "\(viewModel.warningCount)",
+                    icon: "exclamationmark.triangle",
+                    color: .orange
+                )
+                StatCard(
+                    title: "Buffered",
+                    value: "\(viewModel.bufferSize)",
+                    icon: "tray",
+                    color: .purple
+                )
+            }
         }
         .padding()
     }
@@ -283,6 +314,274 @@ public struct DebugConsoleView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Endpoint Settings View
+
+@available(iOS 15.0, *)
+struct EndpointSettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel = EndpointSettingsViewModel()
+    @State private var showingCustomInput = false
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                // Enable/Disable Section
+                Section {
+                    Toggle("Enable Remote Logging", isOn: $viewModel.isEnabled)
+                        .tint(.green)
+                } header: {
+                    Text("Remote Logging")
+                } footer: {
+                    Text("When enabled, logs will be sent to the configured endpoint.")
+                }
+                
+                // Current Endpoint Section
+                if viewModel.isEnabled {
+                    Section {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Current Endpoint")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Text(viewModel.endpointString)
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundColor(.primary)
+                            }
+                            Spacer()
+                            Circle()
+                                .fill(viewModel.isEnabled ? Color.green : Color.gray)
+                                .frame(width: 10, height: 10)
+                        }
+                    }
+                    
+                    // Quick Select Section
+                    Section {
+                        ForEach(viewModel.commonEndpoints, id: \.host) { endpoint in
+                            Button(action: {
+                                viewModel.selectEndpoint(host: endpoint.host, port: endpoint.port)
+                            }) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(endpoint.name)
+                                            .foregroundColor(.primary)
+                                        Text("\(endpoint.host):\(endpoint.port)")
+                                            .font(.system(.caption, design: .monospaced))
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                    if viewModel.host == endpoint.host && viewModel.port == endpoint.port {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Button(action: { showingCustomInput = true }) {
+                            HStack {
+                                Image(systemName: "plus.circle")
+                                    .foregroundColor(.blue)
+                                Text("Custom Endpoint...")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    } header: {
+                        Text("Quick Select")
+                    }
+                    
+                    // Manual Configuration Section
+                    Section {
+                        HStack {
+                            Text("Host")
+                                .foregroundColor(.secondary)
+                            TextField("192.168.1.100", text: $viewModel.host)
+                                .textFieldStyle(.plain)
+                                .multilineTextAlignment(.trailing)
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                                .keyboardType(.URL)
+                        }
+                        
+                        HStack {
+                            Text("Port")
+                                .foregroundColor(.secondary)
+                            TextField("8080", text: $viewModel.portString)
+                                .textFieldStyle(.plain)
+                                .multilineTextAlignment(.trailing)
+                                .keyboardType(.numberPad)
+                        }
+                    } header: {
+                        Text("Manual Configuration")
+                    }
+                    
+                    // Test Connection Section
+                    Section {
+                        Button(action: { viewModel.testConnection() }) {
+                            HStack {
+                                Image(systemName: "antenna.radiowaves.left.and.right")
+                                Text("Test Connection")
+                                Spacer()
+                                if viewModel.isTesting {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                } else if let success = viewModel.lastTestResult {
+                                    Image(systemName: success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                        .foregroundColor(success ? .green : .red)
+                                }
+                            }
+                        }
+                        .disabled(viewModel.isTesting)
+                        
+                        if let message = viewModel.testResultMessage {
+                            Text(message)
+                                .font(.caption)
+                                .foregroundColor(viewModel.lastTestResult == true ? .green : .red)
+                        }
+                    }
+                    
+                    // Reset Section
+                    Section {
+                        Button(action: { viewModel.resetToDefaults() }) {
+                            HStack {
+                                Image(systemName: "arrow.counterclockwise")
+                                Text("Reset to Defaults")
+                            }
+                            .foregroundColor(.orange)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Endpoint Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+            .alert("Custom Endpoint", isPresented: $showingCustomInput) {
+                TextField("192.168.1.100:8080", text: $viewModel.customEndpointInput)
+                    .autocapitalization(.none)
+                Button("Cancel", role: .cancel) { }
+                Button("Set") {
+                    viewModel.setCustomEndpoint()
+                }
+            } message: {
+                Text("Enter host:port (e.g., 192.168.1.100:8080)")
+            }
+        }
+    }
+}
+
+// MARK: - Endpoint Settings ViewModel
+
+@available(iOS 15.0, *)
+class EndpointSettingsViewModel: ObservableObject {
+    @Published var isEnabled: Bool {
+        didSet {
+            EndpointManager.shared.isEnabled = isEnabled
+        }
+    }
+    
+    @Published var host: String {
+        didSet {
+            EndpointManager.shared.host = host
+        }
+    }
+    
+    @Published var portString: String {
+        didSet {
+            if let port = Int(portString) {
+                EndpointManager.shared.port = port
+            }
+        }
+    }
+    
+    @Published var isTesting = false
+    @Published var lastTestResult: Bool?
+    @Published var testResultMessage: String?
+    @Published var customEndpointInput = ""
+    
+    var port: Int {
+        Int(portString) ?? EndpointManager.defaultPort
+    }
+    
+    var endpointString: String {
+        "\(host):\(port)"
+    }
+    
+    var commonEndpoints: [(name: String, host: String, port: Int)] {
+        EndpointManager.shared.getCommonEndpoints()
+    }
+    
+    init() {
+        self.isEnabled = EndpointManager.shared.isEnabled
+        self.host = EndpointManager.shared.host
+        self.portString = String(EndpointManager.shared.port)
+    }
+    
+    func selectEndpoint(host: String, port: Int) {
+        self.host = host
+        self.portString = String(port)
+        Logger.shared.info("EndpointSettings", "Selected endpoint: \(host):\(port)")
+    }
+    
+    func setCustomEndpoint() {
+        EndpointManager.shared.setEndpoint(from: customEndpointInput)
+        self.host = EndpointManager.shared.host
+        self.portString = String(EndpointManager.shared.port)
+        customEndpointInput = ""
+    }
+    
+    func resetToDefaults() {
+        EndpointManager.shared.resetToDefaults()
+        self.host = EndpointManager.shared.host
+        self.portString = String(EndpointManager.shared.port)
+        self.isEnabled = EndpointManager.shared.isEnabled
+    }
+    
+    func testConnection() {
+        guard let url = URL(string: "http://\(host):\(port)/health") else {
+            testResultMessage = "Invalid URL"
+            lastTestResult = false
+            return
+        }
+        
+        isTesting = true
+        lastTestResult = nil
+        testResultMessage = nil
+        
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 5
+        
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                self?.isTesting = false
+                
+                if let error = error {
+                    self?.lastTestResult = false
+                    self?.testResultMessage = "Connection failed: \(error.localizedDescription)"
+                    Logger.shared.warning("EndpointSettings", "Connection test failed: \(error.localizedDescription)")
+                } else if let httpResponse = response as? HTTPURLResponse {
+                    if (200...299).contains(httpResponse.statusCode) {
+                        self?.lastTestResult = true
+                        self?.testResultMessage = "Connected successfully!"
+                        Logger.shared.info("EndpointSettings", "Connection test succeeded")
+                    } else {
+                        self?.lastTestResult = false
+                        self?.testResultMessage = "Server returned status \(httpResponse.statusCode)"
+                        Logger.shared.warning("EndpointSettings", "Connection test returned \(httpResponse.statusCode)")
+                    }
+                } else {
+                    self?.lastTestResult = false
+                    self?.testResultMessage = "Unknown error"
+                }
+            }
+        }.resume()
     }
 }
 

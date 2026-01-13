@@ -101,13 +101,22 @@ public class LogBatcher {
             return
         }
 
-        guard let urlString = configuration.errorReportingURI,
-              let baseURL = URL(string: urlString) else {
+        // Use EndpointManager for URL resolution (dynamic endpoint takes precedence)
+        let batchURL: URL?
+        if EndpointManager.shared.isEnabled, let dynamicURL = EndpointManager.shared.batchURL {
+            batchURL = dynamicURL
+        } else if let urlString = configuration.errorReportingURI,
+                  let baseURL = URL(string: urlString) {
+            // Fallback to configuration URL
+            batchURL = baseURL.deletingLastPathComponent().appendingPathComponent("batch")
+        } else {
+            // No endpoint configured, skip sending
             return
         }
-
-        // Build batch endpoint URL
-        let batchURL = baseURL.deletingLastPathComponent().appendingPathComponent("batch")
+        
+        guard let url = batchURL else {
+            return
+        }
 
         let metadata = MetadataUtil.buildMetadata(from: configuration)
 
@@ -130,7 +139,7 @@ public class LogBatcher {
             encoder.dateEncodingStrategy = .iso8601
             let jsonData = try encoder.encode(batch)
 
-            var request = URLRequest(url: batchURL)
+            var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.httpBody = jsonData
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")

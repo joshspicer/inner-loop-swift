@@ -38,9 +38,18 @@ public class ErrorHandler {
         // Log to stderr to avoid circular dependency with Logger
         fputs("InnerLoop: Error reported: \(errorMessage)\n", stderr)
         
+        // Determine the URL to use (EndpointManager takes precedence)
+        let reportURL: URL?
+        if EndpointManager.shared.isEnabled, let dynamicURL = EndpointManager.shared.errorURL {
+            reportURL = dynamicURL
+        } else if let urlString = configuration.errorReportingURI {
+            reportURL = URL(string: urlString)
+        } else {
+            reportURL = nil
+        }
+        
         // Send to remote endpoint if configured
-        if let urlString = configuration.errorReportingURI,
-           let url = URL(string: urlString) {
+        if let url = reportURL {
             var headers = configuration.customHeaders
             headers["X-App-Id"] = configuration.appId
             headers["X-Shared-Secret"] = configuration.sharedSecret
@@ -71,9 +80,18 @@ public class ErrorHandler {
         // Log to stderr to avoid circular dependency with Logger
         fputs("InnerLoop: Error reported: \(message)\n", stderr)
         
+        // Determine the URL to use (EndpointManager takes precedence)
+        let reportURL: URL?
+        if EndpointManager.shared.isEnabled, let dynamicURL = EndpointManager.shared.errorURL {
+            reportURL = dynamicURL
+        } else if let urlString = configuration.errorReportingURI {
+            reportURL = URL(string: urlString)
+        } else {
+            reportURL = nil
+        }
+        
         // Send to remote endpoint if configured
-        if let urlString = configuration.errorReportingURI,
-           let url = URL(string: urlString) {
+        if let url = reportURL {
             var headers = configuration.customHeaders
             headers["X-App-Id"] = configuration.appId
             headers["X-Shared-Secret"] = configuration.sharedSecret
