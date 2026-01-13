@@ -18,10 +18,10 @@ public class EndpointManager {
     
     /// Default endpoint port
     public static var defaultPort: Int = 7990
-    to using HTTPS (set to false for local development)
+
+    /// Default setting for whether to use HTTPS (set to false for local development)
     public static var defaultUseHTTPS: Bool = false
-    
-    /// Default 
+
     /// Default path for log batches
     public static var batchPath: String = "/api/batch"
     
@@ -56,7 +56,10 @@ public class EndpointManager {
         set {
             userDefaults.set(newValue, forKey: portKey)
             notifyEndpointChanged()
-        Whether to use HTTPS instead of HTTP
+        }
+    }
+
+    /// Whether to use HTTPS instead of HTTP
     public var useHTTPS: Bool {
         get { userDefaults.object(forKey: useHTTPSKey) as? Bool ?? Self.defaultUseHTTPS }
         set {
@@ -73,10 +76,7 @@ public class EndpointManager {
     /// The full base URL for the endpoint
     public var baseURL: URL? {
         guard isEnabled else { return nil }
-        return URL(string: "\(scheme)e endpoint
-    public var baseURL: URL? {
-        guard isEnabled else { return nil }
-        return URL(string: "http://\(host):\(port)")
+        return URL(string: "\(scheme)://\(host):\(port)")
     }
     
     /// The full URL for log batch endpoint
@@ -91,14 +91,9 @@ public class EndpointManager {
     
     /// String representation of the current endpoint
     public var endpointString: String {
-        "\(host):\(port)", useHTTPS: Bool? = nil) {
-        self.host = host
-        self.port = port
-        if let useHTTPS = useHTTPS {
-            self.useHTTPS = useHTTPS
-        }
-        Logger.shared.info("EndpointManager", "Endpoint set to \(scheme)://
-    
+        "\(scheme)://\(host):\(port)"
+    }
+
     /// Callback when endpoint configuration changes
     public var onEndpointChanged: (() -> Void)?
     
@@ -118,8 +113,7 @@ public class EndpointManager {
     }
     
     /// Set the endpoint from a URL string (e.g., "192.168.1.100:8080")
-    publuserDefaults.removeObject(forKey: useHTTPSKey)
-        ic func setEndpoint(from string: String) {
+    public func setEndpoint(from string: String) {
         let components = string.split(separator: ":")
         if components.count == 2,
            let portValue = Int(components[1]) {
@@ -136,6 +130,7 @@ public class EndpointManager {
         userDefaults.removeObject(forKey: endpointKey)
         userDefaults.removeObject(forKey: portKey)
         userDefaults.removeObject(forKey: enabledKey)
+        userDefaults.removeObject(forKey: useHTTPSKey)
         notifyEndpointChanged()
         Logger.shared.info("EndpointManager", "Endpoint reset to defaults")
     }
