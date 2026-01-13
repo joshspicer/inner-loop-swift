@@ -1,7 +1,7 @@
 {
   "name": "innerloop-service",
   "version": "1.0.0",
-  "description": "InnerLoop backend service for processing logs and errors with LLM integration",
+  "description": "InnerLoop backend service for processing logs and errors with plugin system",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
@@ -12,7 +12,7 @@
   "keywords": [
     "logging",
     "error-tracking",
-    "llm",
+    "plugins",
     "ios"
   ],
   "author": "",
