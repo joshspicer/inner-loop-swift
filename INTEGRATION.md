@@ -7,7 +7,7 @@ This guide will help you integrate InnerLoop into your iOS project quickly.
 - [UIKit Integration](#uikit-integration)
 - [SwiftUI Integration](#swiftui-integration)
 - [Testing on Real Devices](#testing-on-real-devices)
-- [LLM-Assisted Development](#llm-assisted-development)
+- [Plugin-Based Extensibility](#plugin-based-extensibility)
 
 ## 5-Minute Quick Start
 
@@ -355,9 +355,9 @@ let config = InnerLoopConfiguration(
    - Shake the device to open the debug menu
    - Select "Test Error Reporting" to verify your setup
 
-## LLM-Assisted Development
+## Plugin-Based Extensibility
 
-InnerLoop is designed to work seamlessly with LLM-assisted development workflows:
+InnerLoop is designed with extensibility in mind through its plugin and hook system:
 
 ### 1. Automatic Error Context
 
@@ -367,7 +367,7 @@ Errors reported through InnerLoop include:
 - Device metadata
 - Custom context you provide
 
-This gives your LLM all the information it needs to help debug issues.
+This gives your backend plugins all the information needed to process and analyze issues.
 
 ### 2. Structured Logging
 
@@ -377,28 +377,30 @@ Logs include:
 - File and line number
 - Function name
 
-This makes it easy for LLMs to understand code flow and identify issues.
+This structured format makes it easy for plugins to parse and process log data.
 
-### 3. Real-Time Feedback
+### 3. Real-Time Processing
 
-Set up a server endpoint to receive logs and errors in real-time:
+Set up the InnerLoop service to receive logs and errors in real-time:
 
 ```swift
 let config = InnerLoopConfiguration(
-    errorReportingURI: "https://your-llm-server.com/api/errors",
+    errorReportingURI: "https://your-server.com/api/errors",
+    batchReportingURI: "https://your-server.com/api/batch",
     enableShakeGesture: true
 )
 ```
 
-Your LLM can then:
-- Monitor errors as they happen
-- Suggest fixes based on stack traces
-- Identify patterns in logs
-- Provide real-time debugging assistance
+Your backend plugins can then:
+- Create GitHub issues automatically
+- Send notifications via webhooks
+- Forward to monitoring services
+- Trigger custom workflows
+- Integrate with any external service
 
 ### 4. Custom Metadata
 
-Add context that helps your LLM understand the situation:
+Add context that helps your plugins understand the situation:
 
 ```swift
 InnerLoop.shared.reportError(error, additionalInfo: [
@@ -410,32 +412,35 @@ InnerLoop.shared.reportError(error, additionalInfo: [
 ])
 ```
 
-### Example: LLM Integration Server
+### Plugin Examples
 
-Here's a simple example of what your server endpoint might do:
+The InnerLoop service includes a plugin system with lifecycle hooks. For example, the built-in GitHub plugin:
 
-```javascript
-// Node.js example
-app.post('/api/errors', (req, res) => {
-    const errorData = req.body;
-    
-    // Forward to your LLM for analysis
-    const llmPrompt = `
-    An error occurred in the iOS app:
-    Message: ${errorData.message}
-    Stack Trace: ${errorData.stackTrace}
-    Environment: ${errorData.environment}
-    Metadata: ${JSON.stringify(errorData.metadata)}
-    
-    Please analyze this error and suggest a fix.
-    `;
-    
-    // Send to LLM API
-    // ... your LLM integration code
-    
-    res.status(200).json({ status: 'received' });
-});
+```typescript
+// Example from the GitHub plugin
+export const plugin: Plugin = {
+  name: 'github-plugin',
+  hooks: {
+    onErrorReceived: async (error) => {
+      // Automatically create GitHub issue when error is received
+      await createGitHubIssue(error);
+    },
+    onBatchStored: async (batch) => {
+      // Create issue when user reports problem via shake
+      await createGitHubIssue(batch);
+    }
+  }
+};
 ```
+
+You can create your own plugins to:
+- Integrate with Slack, PagerDuty, or other notification services
+- Send data to analytics platforms
+- Trigger automated testing or deployments
+- Process logs with custom AI/LLM services
+- Store data in custom databases or data warehouses
+
+For complete plugin documentation, see [service/PLUGINS.md](service/PLUGINS.md).
 
 ## Best Practices
 
@@ -518,7 +523,7 @@ let config = InnerLoopConfiguration(
 
 - Read the [full documentation](README.md)
 - Check out [usage examples](Examples/UsageExamples.swift)
-- Integrate with your LLM workflow
+- Set up plugins for your workflow (see [service/PLUGINS.md](service/PLUGINS.md))
 - Customize the debug menu for your needs
 
 ## Support

@@ -113,29 +113,55 @@ pip install flask
 python app.py
 ```
 
-## LLM Integration Example
+## Plugin Integration Example
 
-Here's an example of forwarding errors to an LLM for analysis:
+InnerLoop includes a built-in plugin system. Instead of creating custom server examples, you can use the plugin system to extend functionality. Here's how plugins work:
 
-```javascript
-// llm-server.js
-const express = require('express');
-const axios = require('axios');
-const app = express();
-const PORT = 7990;
+### Using the Built-in Service with Plugins
 
-app.use(express.json());
+The InnerLoop service (in the `service/` directory) includes a plugin architecture with lifecycle hooks:
 
-// Your OpenAI API key
+```typescript
+// Example: Creating a custom plugin
+export const customPlugin: Plugin = {
+  name: 'custom-plugin',
+  hooks: {
+    async onErrorReceived(error: ErrorReport) {
+      // Process error when it arrives
+      console.log('Error received:', error.message);
+
+      // You can call any external service here:
+      // - Send to Slack
+      // - Call an LLM API for analysis
+      // - Trigger webhooks
+      // - Store in custom database
+    },
+    async onBatchStored(batch: LogBatch) {
+      // Process log batch after it's stored
+      console.log('User reported:', batch.userMessage);
+
+      // Example: Forward to LLM for analysis
+      if (process.env.ENABLE_LLM_ANALYSIS) {
+        const analysis = await analyzeLogs(batch);
+        console.log('Analysis:', analysis);
+      }
+    }
+  }
+};
+```
+
+### Example: LLM Analysis Plugin
+
+If you want to integrate LLM analysis, create a custom plugin:
+
+```typescript
+// plugins/llm-analysis-plugin.ts
+import { Plugin } from '../plugin-system';
+
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-app.post('/api/errors', async (req, res) => {
-    const errorData = req.body;
-    
-    console.log('Error received, analyzing with LLM...');
-    
-    // Create prompt for LLM
-    const prompt = `
+async function analyzeWithLLM(errorData: any): Promise<string> {
+  const prompt = `
 Analyze this iOS app error and provide debugging suggestions:
 
 Error Message: ${errorData.message}
@@ -145,63 +171,78 @@ App Version: ${errorData.appVersion}
 Stack Trace:
 ${errorData.stackTrace}
 
-Metadata:
-${JSON.stringify(errorData.metadata, null, 2)}
-
 Please provide:
 1. Likely cause of the error
 2. Suggested fixes
 3. Additional information needed (if any)
 `;
-    
-    try {
-        // Call OpenAI API (example)
-        const response = await axios.post(
-            'https://api.openai.com/v1/chat/completions',
-            {
-                model: 'gpt-4',
-                messages: [
-                    { role: 'system', content: 'You are an expert iOS developer helping debug issues.' },
-                    { role: 'user', content: prompt }
-                ]
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-        
-        const analysis = response.data.choices[0].message.content;
-        
-        console.log('=== LLM Analysis ===');
-        console.log(analysis);
-        console.log('===================\n');
-        
-        // Send analysis back (or store it, send via email, etc.)
-        res.status(200).json({ 
-            status: 'received', 
-            analysis: analysis
-        });
-    } catch (error) {
-        console.error('Error calling LLM:', error.message);
-        res.status(200).json({ status: 'received' });
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: 'You are an expert iOS developer.' },
+        { role: 'user', content: prompt }
+      ]
+    })
+  });
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+export const llmAnalysisPlugin: Plugin = {
+  name: 'llm-analysis',
+  hooks: {
+    async onErrorReceived(error) {
+      if (!OPENAI_API_KEY) return;
+
+      console.log('Analyzing error with LLM...');
+      const analysis = await analyzeWithLLM(error);
+      console.log('=== LLM Analysis ===');
+      console.log(analysis);
+      console.log('===================');
+    },
+    async onBatchStored(batch) {
+      if (!OPENAI_API_KEY || !batch.userMessage) return;
+
+      console.log('Analyzing user report with LLM...');
+      const analysis = await analyzeWithLLM({
+        message: batch.userMessage,
+        environment: batch.environment,
+        appVersion: batch.appVersion,
+        stackTrace: batch.logs
+          .filter(log => log.level === 'ERROR')
+          .map(log => `${log.message} at ${log.file}:${log.line}`)
+          .join('\n')
+      });
+      console.log('=== LLM Analysis ===');
+      console.log(analysis);
+      console.log('===================');
     }
-});
-
-app.listen(PORT, () => {
-    console.log(`LLM-powered InnerLoop server listening on port ${PORT}`);
-});
+  }
+};
 ```
 
-### Setup and Run
+### Enabling Your Custom Plugin
 
-```bash
-npm install express axios
-export OPENAI_API_KEY=your-api-key-here
-node llm-server.js
+Add your plugin to the service:
+
+```typescript
+// In service/src/server.ts
+import { llmAnalysisPlugin } from './plugins/llm-analysis-plugin';
+
+pluginSystem.registerPlugin(llmAnalysisPlugin);
 ```
+
+For complete plugin documentation and examples, see [../../service/PLUGINS.md](../../service/PLUGINS.md).
+
+## Standalone Server Examples
 
 ## Database Storage Example
 
