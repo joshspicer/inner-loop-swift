@@ -13,13 +13,13 @@ public class RemoteLogDestination: LogDestination {
         self.minimumLevel = minimumLevel
     }
 
-    public func write(message: String, level: LogLevel, timestamp: Date, file: String, function: String, line: Int) {
+    public func write(message: String, level: LogLevel, category: String?, timestamp: Date, file: String, function: String, line: Int) {
         guard level >= minimumLevel else { return }
 
         queue.async { [weak self] in
             guard let self = self else { return }
 
-            let logEntry: [String: Any] = [
+            var logEntry: [String: Any] = [
                 "message": message,
                 "level": level.description,
                 "timestamp": ISO8601DateFormatter().string(from: timestamp),
@@ -27,6 +27,10 @@ public class RemoteLogDestination: LogDestination {
                 "function": function,
                 "line": line
             ]
+            
+            if let category = category {
+                logEntry["category"] = category
+            }
 
             do {
                 let jsonData = try JSONSerialization.data(withJSONObject: logEntry)

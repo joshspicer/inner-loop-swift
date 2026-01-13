@@ -44,26 +44,46 @@ public class Logger {
     }
     
     /// Log a debug message
-    public func debug(_ message: String, file: String = #file, function: String = #function, line: Int = #line) {
-        log(message: message, level: .debug, file: file, function: function, line: line)
+    public func debug(_ message: String, category: String? = nil, file: String = #file, function: String = #function, line: Int = #line) {
+        log(message: message, level: .debug, category: category, file: file, function: function, line: line)
+    }
+    
+    /// Log a debug message with category as first parameter (for backward compatibility)
+    public func debug(_ category: String, _ message: String, file: String = #file, function: String = #function, line: Int = #line) {
+        log(message: message, level: .debug, category: category, file: file, function: function, line: line)
     }
     
     /// Log an info message
-    public func info(_ message: String, file: String = #file, function: String = #function, line: Int = #line) {
-        log(message: message, level: .info, file: file, function: function, line: line)
+    public func info(_ message: String, category: String? = nil, file: String = #file, function: String = #function, line: Int = #line) {
+        log(message: message, level: .info, category: category, file: file, function: function, line: line)
+    }
+    
+    /// Log an info message with category as first parameter (for backward compatibility)
+    public func info(_ category: String, _ message: String, file: String = #file, function: String = #function, line: Int = #line) {
+        log(message: message, level: .info, category: category, file: file, function: function, line: line)
     }
     
     /// Log a warning message
-    public func warning(_ message: String, file: String = #file, function: String = #function, line: Int = #line) {
-        log(message: message, level: .warning, file: file, function: function, line: line)
+    public func warning(_ message: String, category: String? = nil, file: String = #file, function: String = #function, line: Int = #line) {
+        log(message: message, level: .warning, category: category, file: file, function: function, line: line)
+    }
+    
+    /// Log a warning message with category as first parameter (for backward compatibility)
+    public func warning(_ category: String, _ message: String, file: String = #file, function: String = #function, line: Int = #line) {
+        log(message: message, level: .warning, category: category, file: file, function: function, line: line)
     }
     
     /// Log an error message
-    public func error(_ message: String, file: String = #file, function: String = #function, line: Int = #line) {
-        log(message: message, level: .error, file: file, function: function, line: line)
+    public func error(_ message: String, category: String? = nil, file: String = #file, function: String = #function, line: Int = #line) {
+        log(message: message, level: .error, category: category, file: file, function: function, line: line)
     }
     
-    private func log(message: String, level: LogLevel, file: String, function: String, line: Int) {
+    /// Log an error message with category as first parameter (for backward compatibility)
+    public func error(_ category: String, _ message: String, file: String = #file, function: String = #function, line: Int = #line) {
+        log(message: message, level: .error, category: category, file: file, function: function, line: line)
+    }
+    
+    private func log(message: String, level: LogLevel, category: String?, file: String, function: String, line: Int) {
         let timestamp = Date()
 
         queue.async { [weak self] in
@@ -73,11 +93,11 @@ public class Logger {
             guard level >= self.minimumLevel else { return }
 
             self.destinations.forEach { destination in
-                destination.write(message: message, level: level, timestamp: timestamp, file: file, function: function, line: line)
+                destination.write(message: message, level: level, category: category, timestamp: timestamp, file: file, function: function, line: line)
             }
 
             // Add to batch buffer for all log levels to collect context
-            LogBatcher.shared.addLog(message: message, level: level, timestamp: timestamp, file: file, function: function, line: line)
+            LogBatcher.shared.addLog(message: message, level: level, category: category, timestamp: timestamp, file: file, function: function, line: line)
         }
     }
 }

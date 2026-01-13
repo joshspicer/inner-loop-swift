@@ -22,13 +22,14 @@ public class LogBatcher {
     }
 
     /// Add a log entry to the buffer
-    public func addLog(message: String, level: LogLevel, timestamp: Date, file: String, function: String, line: Int) {
+    public func addLog(message: String, level: LogLevel, category: String?, timestamp: Date, file: String, function: String, line: Int) {
         queue.async { [weak self] in
             guard let self = self else { return }
 
             let entry = LogEntry(
                 message: message,
                 level: level.description,
+                category: category,
                 timestamp: timestamp,
                 file: (file as NSString).lastPathComponent,
                 function: function,

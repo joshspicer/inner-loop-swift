@@ -152,15 +152,17 @@ final class LoggerTests: XCTestCase {
 class TestLogDestination: LogDestination {
     var lastMessage: String?
     var lastLevel: LogLevel?
+    var lastCategory: String?
     var lastTimestamp: Date?
     var lastFile: String?
     var lastFunction: String?
     var lastLine: Int?
     var writeCount = 0
     
-    func write(message: String, level: LogLevel, timestamp: Date, file: String, function: String, line: Int) {
+    func write(message: String, level: LogLevel, category: String?, timestamp: Date, file: String, function: String, line: Int) {
         lastMessage = message
         lastLevel = level
+        lastCategory = category
         lastTimestamp = timestamp
         lastFile = file
         lastFunction = function

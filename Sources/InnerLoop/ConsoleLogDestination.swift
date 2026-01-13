@@ -10,9 +10,10 @@ public class ConsoleLogDestination: LogDestination {
 
     public init() {}
 
-    public func write(message: String, level: LogLevel, timestamp: Date, file: String, function: String, line: Int) {
+    public func write(message: String, level: LogLevel, category: String?, timestamp: Date, file: String, function: String, line: Int) {
         let timeString = dateFormatter.string(from: timestamp)
         let filename = (file as NSString).lastPathComponent
-        print("[\(timeString)] [\(level.description)] [\(filename):\(line)] \(function) - \(message)")
+        let categoryStr = category.map { "[\($0)] " } ?? ""
+        print("[\(timeString)] [\(level.description)] \(categoryStr)[\(filename):\(line)] \(function) - \(message)")
     }
 }

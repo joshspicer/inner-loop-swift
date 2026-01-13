@@ -43,27 +43,47 @@ public class InnerLoop {
             shakeGestureDetector.enable()
         }
 
-        logger.info("InnerLoop initialized with environment: \(configuration.environment)")
+        logger.info("InnerLoop initialized with environment: \(configuration.environment)", category: "InnerLoop")
     }
     
     /// Convenience method to log debug messages
-    public func debug(_ message: String, file: String = #file, function: String = #function, line: Int = #line) {
-        logger.debug(message, file: file, function: function, line: line)
+    public func debug(_ message: String, category: String? = nil, file: String = #file, function: String = #function, line: Int = #line) {
+        logger.debug(message, category: category, file: file, function: function, line: line)
+    }
+    
+    /// Convenience method to log debug messages with category as first parameter
+    public func debug(_ category: String, _ message: String, file: String = #file, function: String = #function, line: Int = #line) {
+        logger.debug(category, message, file: file, function: function, line: line)
     }
     
     /// Convenience method to log info messages
-    public func info(_ message: String, file: String = #file, function: String = #function, line: Int = #line) {
-        logger.info(message, file: file, function: function, line: line)
+    public func info(_ message: String, category: String? = nil, file: String = #file, function: String = #function, line: Int = #line) {
+        logger.info(message, category: category, file: file, function: function, line: line)
+    }
+    
+    /// Convenience method to log info messages with category as first parameter
+    public func info(_ category: String, _ message: String, file: String = #file, function: String = #function, line: Int = #line) {
+        logger.info(category, message, file: file, function: function, line: line)
     }
     
     /// Convenience method to log warning messages
-    public func warning(_ message: String, file: String = #file, function: String = #function, line: Int = #line) {
-        logger.warning(message, file: file, function: function, line: line)
+    public func warning(_ message: String, category: String? = nil, file: String = #file, function: String = #function, line: Int = #line) {
+        logger.warning(message, category: category, file: file, function: function, line: line)
+    }
+    
+    /// Convenience method to log warning messages with category as first parameter
+    public func warning(_ category: String, _ message: String, file: String = #file, function: String = #function, line: Int = #line) {
+        logger.warning(category, message, file: file, function: function, line: line)
     }
     
     /// Convenience method to log error messages
-    public func error(_ message: String, file: String = #file, function: String = #function, line: Int = #line) {
-        logger.error(message, file: file, function: function, line: line)
+    public func error(_ message: String, category: String? = nil, file: String = #file, function: String = #function, line: Int = #line) {
+        logger.error(message, category: category, file: file, function: function, line: line)
+    }
+    
+    /// Convenience method to log error messages with category as first parameter
+    public func error(_ category: String, _ message: String, file: String = #file, function: String = #function, line: Int = #line) {
+        logger.error(category, message, file: file, function: function, line: line)
     }
     
     /// Report an error
