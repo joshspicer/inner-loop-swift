@@ -6,7 +6,7 @@ This guide will get you up and running with InnerLoop in under 10 minutes.
 
 - A backend service that receives and stores logs from your iOS app
 - An iOS app configured to batch logs and send them when users report issues
-- (Optional) LLM-powered analysis of errors and user-reported issues
+- (Optional) Plugin integrations for custom processing (GitHub issues, webhooks, etc.)
 
 ## Step 1: Start the Backend Service
 
@@ -134,36 +134,15 @@ docker-compose logs -f innerloop-service
 # Logs appear in the terminal where you ran npm start
 ```
 
-## Step 7 (Optional): Enable LLM Analysis
+## Step 7 (Optional): Enable Plugins
 
-To get AI-powered analysis of errors and user-reported issues:
+InnerLoop supports a plugin system for extending functionality. To configure plugins like GitHub integration:
 
-1. Edit `service/.env`:
-```bash
-ENABLE_LLM=true
-AUTO_ANALYZE_ERRORS=true
-LLM_PROVIDER=openai  # or anthropic
+1. Navigate to the Admin UI at `http://localhost:7990/admin`
+2. Go to the Plugins tab
+3. Configure desired plugins (e.g., GitHub plugin to automatically create issues)
 
-# Add your API key
-OPENAI_API_KEY=sk-your-key-here
-# OR
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
-
-2. Restart the service:
-```bash
-docker-compose restart innerloop-service
-```
-
-Now when errors occur or users send logs with messages, the service will automatically analyze them and provide:
-- Root cause analysis
-- Fix suggestions
-- Prevention strategies
-
-View the analysis:
-```bash
-curl http://localhost:7990/api/batches/1 | jq '.analysis'
-```
+See [service/PLUGINS.md](service/PLUGINS.md) for full plugin documentation.
 
 ## Production Deployment
 

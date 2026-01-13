@@ -1,6 +1,6 @@
 # InnerLoop
 
-A generic Swift library for iOS development that makes it easy to test on real devices, forward logs, and handle errors with LLM-assisted development workflows.
+A generic Swift library for iOS development that makes it easy to test on real devices, forward logs, and handle errors with a flexible plugin and hook system.
 
 ## Features
 
@@ -8,8 +8,8 @@ A generic Swift library for iOS development that makes it easy to test on real d
 - 🐛 **Error Handler**: Automatic error catching and reporting to configurable endpoints
 - 📦 **Log Batching**: Efficiently collects and batches logs before sending to reduce network overhead
 - 🔄 **Device Shake Debugging**: Built-in debug menu triggered by device shake - add your own context messages
-- 🤖 **LLM Integration**: Backend service with AI-powered error analysis using OpenAI or Anthropic
-- 🐳 **Dockerized Service**: Easy-to-deploy backend service for receiving and analyzing logs
+- 🔌 **Plugin System**: Extensible backend service with plugin architecture for custom integrations (GitHub issues, webhooks, etc.)
+- 🐳 **Dockerized Service**: Easy-to-deploy backend service for receiving and processing logs
 - 🚀 **Easy Integration**: Simple API for quick setup in any iOS project
 - 🎯 **Configurable**: Non-hardcoded URIs and customizable settings
 
@@ -38,7 +38,7 @@ First, set up the InnerLoop service to receive and analyze logs:
 ```bash
 cd service
 cp .env.example .env
-# Edit .env to add your LLM API keys (optional)
+# Edit .env as needed (optional plugin configuration)
 
 # Start with Docker Compose
 docker-compose up -d
