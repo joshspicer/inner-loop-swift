@@ -8,8 +8,9 @@ public struct LogBatch: Codable {
     public let environment: String
     public let appVersion: String?
     public let metadata: [String: String]
+    public let sessionId: String?
 
     enum CodingKeys: String, CodingKey {
-        case logs, userMessage, timestamp, environment, appVersion, metadata
+        case logs, userMessage, timestamp, environment, appVersion, metadata, sessionId
     }
 }
