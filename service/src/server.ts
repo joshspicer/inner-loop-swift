@@ -46,6 +46,7 @@ db.exec(`
     app_version TEXT,
     metadata TEXT,
     log_count INTEGER,
+    session_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -58,6 +59,7 @@ db.exec(`
     file TEXT,
     function TEXT,
     line INTEGER,
+    category TEXT,
     FOREIGN KEY (batch_id) REFERENCES log_batches(id) ON DELETE CASCADE
   );
 
@@ -331,16 +333,16 @@ app.post('/api/batch', authManager.authenticateClient.bind(authManager), async (
   await pluginManager.trigger('onBatchReceived', { batchData });
 
   const batchResult = db.prepare(`
-    INSERT INTO log_batches (app_id, user_message, timestamp, environment, app_version, metadata, log_count)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(batchData.appId, batchData.userMessage || null, batchData.timestamp, batchData.environment, batchData.appVersion, JSON.stringify(batchData.metadata || {}), batchData.logs?.length || 0);
+    INSERT INTO log_batches (app_id, user_message, timestamp, environment, app_version, metadata, log_count, session_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(batchData.appId, batchData.userMessage || null, batchData.timestamp, batchData.environment, batchData.appVersion, JSON.stringify(batchData.metadata || {}), batchData.logs?.length || 0, batchData.sessionId || null);
 
   const batchId = Number(batchResult.lastInsertRowid);
 
   if (batchData.logs?.length) {
-    const logStmt = db.prepare('INSERT INTO batch_logs (batch_id, message, level, timestamp, file, function, line) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const logStmt = db.prepare('INSERT INTO batch_logs (batch_id, message, level, timestamp, file, function, line, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertMany = db.transaction((logs: any[]) => {
-      for (const log of logs) logStmt.run(batchId, log.message, log.level, log.timestamp, log.file, log.function, log.line);
+      for (const log of logs) logStmt.run(batchId, log.message, log.level, log.timestamp, log.file, log.function, log.line, log.category || null);
     });
     insertMany(batchData.logs);
   }

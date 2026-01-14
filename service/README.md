@@ -149,6 +149,7 @@ Content-Type: application/json
   "timestamp": "2026-01-12T19:00:00Z",
   "environment": "production",
   "appVersion": "1.0.0",
+  "sessionId": "unique-session-id",
   "metadata": {
     "deviceModel": "iPhone 14"
   },
@@ -330,6 +331,7 @@ InnerLoop.shared.initialize(with: config)
 - `app_version`: App version
 - `metadata`: JSON metadata
 - `log_count`: Number of logs in batch
+- `session_id`: Unique identifier for the app session
 - `created_at`: When stored
 
 **batch_logs**
@@ -339,7 +341,7 @@ InnerLoop.shared.initialize(with: config)
 - `level`: Log level (DEBUG, INFO, WARNING, ERROR)
 - `timestamp`: When log was created
 - `file`: Source file
-- `function_name`: Function name
+- `function`: Function name
 - `line`: Line number
 - `category`: Log category
 

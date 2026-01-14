@@ -10,8 +10,12 @@ public class LogBatcher {
     private var timer: DispatchSourceTimer?
     private var maxBufferSize: Int = 1000
     private var batchInterval: TimeInterval = 300 // 5 minutes
+    private let sessionId: String
 
-    private init() {}
+    private init() {
+        // Generate a unique session ID for this app session
+        self.sessionId = UUID().uuidString
+    }
 
     /// Configure the log batcher
     public func configure(with configuration: InnerLoopConfiguration, maxBufferSize: Int = 1000, batchInterval: TimeInterval = 300) {
@@ -126,7 +130,8 @@ public class LogBatcher {
             timestamp: Date(),
             environment: configuration.environment,
             appVersion: configuration.appVersion,
-            metadata: metadata
+            metadata: metadata,
+            sessionId: sessionId
         )
 
         // Clear buffer

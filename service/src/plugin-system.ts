@@ -15,6 +15,7 @@ export interface LogEntry {
   file: string;
   function: string;
   line: number;
+  category?: string;
 }
 
 export interface BatchData {
@@ -24,6 +25,7 @@ export interface BatchData {
   environment: string;
   appVersion?: string;
   metadata: Record<string, any>;
+  sessionId?: string;
   logs: LogEntry[];
 }
 

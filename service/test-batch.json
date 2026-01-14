@@ -13,25 +13,37 @@
       "timestamp": "2026-01-13T15:40:00.000Z",
       "level": "INFO",
       "category": "Test",
-      "message": "First log message"
+      "message": "First log message",
+      "file": "TestFile.swift",
+      "function": "testFunction",
+      "line": 42
     },
     {
       "timestamp": "2026-01-13T15:40:01.000Z",
       "level": "DEBUG",
       "category": "Test",
-      "message": "Debug information with details"
+      "message": "Debug information with details",
+      "file": "TestFile.swift",
+      "function": "debugFunction",
+      "line": 55
     },
     {
       "timestamp": "2026-01-13T15:40:02.000Z",
       "level": "WARNING",
       "category": "Test",
-      "message": "Warning: Something might be wrong"
+      "message": "Warning: Something might be wrong",
+      "file": "WarningFile.swift",
+      "function": "warningFunction",
+      "line": 100
     },
     {
       "timestamp": "2026-01-13T15:40:03.000Z",
       "level": "ERROR",
       "category": "Test",
-      "message": "Error: Something went wrong!"
+      "message": "Error: Something went wrong!",
+      "file": "ErrorFile.swift",
+      "function": "errorFunction",
+      "line": 200
     }
   ]
 }
