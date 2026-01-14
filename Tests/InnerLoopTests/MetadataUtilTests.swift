@@ -86,7 +86,7 @@ final class MetadataUtilTests: XCTestCase {
         XCTAssertEqual(metadata["timestamp"], "2024-01-01")
     }
     
-    func testBuildMetadataOverride() {
+    func testConfigMetadataOverridesAdditionalInfo() {
         let configMetadata: [String: Any] = [
             "environment": "development",
             "userId": "original"
@@ -98,14 +98,14 @@ final class MetadataUtilTests: XCTestCase {
             metadata: configMetadata
         )
         
-        // Additional info with overlapping key
+        // Additional info with overlapping key - should be overridden by config
         let additionalInfo = [
             "userId": "override"
         ]
         
         let metadata = MetadataUtil.buildMetadata(from: config, additionalInfo: additionalInfo)
         
-        // Config metadata should override additional info
+        // Config metadata takes precedence and overrides additional info
         // (additionalInfo is processed first, then config metadata overwrites)
         XCTAssertEqual(metadata["userId"], "original")
         XCTAssertEqual(metadata["environment"], "development")
