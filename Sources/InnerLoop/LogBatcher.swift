@@ -105,9 +105,12 @@ public class LogBatcher {
         let batchURL: URL?
         if EndpointManager.shared.isEnabled, let dynamicURL = EndpointManager.shared.batchURL {
             batchURL = dynamicURL
+        } else if let urlString = configuration.batchReportingURI {
+            // Use explicit batchReportingURI if provided
+            batchURL = URL(string: urlString)
         } else if let urlString = configuration.errorReportingURI,
                   let baseURL = URL(string: urlString) {
-            // Fallback to configuration URL
+            // Fallback: derive from errorReportingURI
             batchURL = baseURL.deletingLastPathComponent().appendingPathComponent("batch")
         } else {
             // No endpoint configured, skip sending
@@ -145,8 +148,12 @@ public class LogBatcher {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
             // Add custom headers
-            request.setValue(configuration.appId, forHTTPHeaderField: "X-App-Id")
-            request.setValue(configuration.sharedSecret, forHTTPHeaderField: "X-Shared-Secret")
+            if let appId = configuration.appId {
+                request.setValue(appId, forHTTPHeaderField: "X-App-Id")
+            }
+            if let sharedSecret = configuration.sharedSecret {
+                request.setValue(sharedSecret, forHTTPHeaderField: "X-Shared-Secret")
+            }
             for (key, value) in configuration.customHeaders {
                 request.setValue(value, forHTTPHeaderField: key)
             }

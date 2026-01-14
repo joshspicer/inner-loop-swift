@@ -259,7 +259,7 @@ struct ContentView: View {
 // MARK: - Example 7: Custom Log Destination
 
 class AnalyticsLogDestination: LogDestination {
-    func write(message: String, level: LogLevel, timestamp: Date, file: String, function: String, line: Int) {
+    func write(message: String, level: LogLevel, category: String?, timestamp: Date, file: String, function: String, line: Int) {
         // Send important logs to your analytics service
         guard level >= .warning else { return }
         
@@ -267,6 +267,7 @@ class AnalyticsLogDestination: LogDestination {
         // Analytics.track("Log", properties: [
         //     "level": level.description,
         //     "message": message,
+        //     "category": category ?? "general",
         //     "file": file,
         //     "line": line
         // ])

@@ -13,8 +13,6 @@ final class ErrorHandlerTests: XCTestCase {
     func testErrorHandlerConfiguration() {
         let config = InnerLoopConfiguration(
             errorReportingURI: "https://example.com/errors",
-            appId: "test-app",
-            sharedSecret: "test-secret",
             environment: "test",
             appVersion: "1.0.0"
         )
@@ -25,10 +23,23 @@ final class ErrorHandlerTests: XCTestCase {
         XCTAssertTrue(true)
     }
     
-    func testReportErrorMessage() {
+    func testErrorHandlerConfigurationWithAuth() {
         let config = InnerLoopConfiguration(
+            errorReportingURI: "https://example.com/errors",
             appId: "test-app",
             sharedSecret: "test-secret",
+            environment: "test",
+            appVersion: "1.0.0"
+        )
+
+        errorHandler.configure(with: config)
+
+        // Configuration should succeed with auth
+        XCTAssertTrue(true)
+    }
+    
+    func testReportErrorMessage() {
+        let config = InnerLoopConfiguration(
             environment: "test",
             appVersion: "1.0.0"
         )
@@ -43,8 +54,6 @@ final class ErrorHandlerTests: XCTestCase {
     
     func testReportError() {
         let config = InnerLoopConfiguration(
-            appId: "test-app",
-            sharedSecret: "test-secret",
             environment: "test",
             appVersion: "1.0.0"
         )

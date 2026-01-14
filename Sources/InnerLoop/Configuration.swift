@@ -5,11 +5,14 @@ public struct InnerLoopConfiguration {
     /// The URI endpoint where errors and exceptions should be reported
     public var errorReportingURI: String?
 
-    /// Application identifier (e.g., bundle ID for iOS apps)
-    public var appId: String
+    /// The URI endpoint where log batches should be sent (optional, defaults to derived from errorReportingURI)
+    public var batchReportingURI: String?
 
-    /// Shared secret for authentication with the server
-    public var sharedSecret: String
+    /// Application identifier (e.g., bundle ID for iOS apps) - optional
+    public var appId: String?
+
+    /// Shared secret for authentication with the server - optional
+    public var sharedSecret: String?
 
     /// Enable device shake gesture for debugging
     public var enableShakeGesture: Bool
@@ -34,8 +37,9 @@ public struct InnerLoopConfiguration {
 
     public init(
         errorReportingURI: String? = nil,
-        appId: String,
-        sharedSecret: String,
+        batchReportingURI: String? = nil,
+        appId: String? = nil,
+        sharedSecret: String? = nil,
         enableShakeGesture: Bool = true,
         customHeaders: [String: String] = [:],
         environment: String = "development",
@@ -45,6 +49,7 @@ public struct InnerLoopConfiguration {
         batchInterval: TimeInterval = 300
     ) {
         self.errorReportingURI = errorReportingURI
+        self.batchReportingURI = batchReportingURI
         self.appId = appId
         self.sharedSecret = sharedSecret
         self.enableShakeGesture = enableShakeGesture
