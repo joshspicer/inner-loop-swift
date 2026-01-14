@@ -51,8 +51,12 @@ public class ErrorHandler {
         // Send to remote endpoint if configured
         if let url = reportURL {
             var headers = configuration.customHeaders
-            headers["X-App-Id"] = configuration.appId
-            headers["X-Shared-Secret"] = configuration.sharedSecret
+            if let appId = configuration.appId {
+                headers["X-App-Id"] = appId
+            }
+            if let sharedSecret = configuration.sharedSecret {
+                headers["X-Shared-Secret"] = sharedSecret
+            }
             sendErrorReport(errorInfo: errorInfo, to: url, headers: headers)
         }
     }
@@ -93,8 +97,12 @@ public class ErrorHandler {
         // Send to remote endpoint if configured
         if let url = reportURL {
             var headers = configuration.customHeaders
-            headers["X-App-Id"] = configuration.appId
-            headers["X-Shared-Secret"] = configuration.sharedSecret
+            if let appId = configuration.appId {
+                headers["X-App-Id"] = appId
+            }
+            if let sharedSecret = configuration.sharedSecret {
+                headers["X-Shared-Secret"] = sharedSecret
+            }
             sendErrorReport(errorInfo: errorInfo, to: url, headers: headers)
         }
     }
