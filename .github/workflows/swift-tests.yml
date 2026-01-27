@@ -1,0 +1,42 @@
+name: Swift Package Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Swift Tests
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Display Swift and Xcode version
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: List available iOS simulators
+        run: xcrun simctl list devices available
+
+      - name: Build Swift package for iOS
+        run: |
+          xcodebuild build \
+            -scheme InnerLoop \
+            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device'
+
+      - name: Run Swift tests on iOS Simulator
+        run: |
+          xcodebuild test \
+            -scheme InnerLoop \
+            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
+            -enableCodeCoverage YES
